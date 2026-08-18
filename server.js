@@ -208,9 +208,9 @@ async function callHF(messages, temperature) {
       if (raw && inputs && raw.startsWith(inputs)) raw = raw.slice(inputs.length).trim();
       if (!raw) throw new Error("empty response");
       return { provider: providerName, text: raw.trim() };
-    } catch (e) { lastErr = e; console.warn("[hf]", providerName, "failed, trying fallback:", e.message); }
+    } catch (e) { lastErr = e; console.warn("[hf]", providerName, "failed:", e.message, "| cause:", e?.cause?.code || e?.cause?.message || e?.code || "-"); }
   }
-  throw new Error("Hugging Face models unavailable: " + (lastErr?.message || ""));
+  throw new Error("Hugging Face models unavailable: " + (lastErr?.message || "") + (lastErr?.cause?.code ? " (" + lastErr.cause.code + ")" : ""));
 }
 function buildMessages({ systemPrompt, userMessage, modePrompt = "", history = [] }) {
   let system = (systemPrompt || "");
