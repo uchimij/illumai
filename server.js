@@ -93,7 +93,10 @@ const OLLAMA_BASE = process.env.OLLAMA_BASE_URL || process.env.OLLAMA_HOST || "h
 const OLLAMA_KEY = process.env.OLLAMA_API_KEY || process.env.ILU_OLLAMA || "";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.1";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
-const _PROVIDERS=[["glm",GLM_KEY],["cohere",COHERE_KEY],["deepseek",DEEPSEEK_KEY],["ollama",OLLAMA_BASE],["openai",OPENAI_KEY]];
+const HF_KEY = process.env.HF_API_KEY || process.env.HF_TOKEN || process.env.ILU_HF || "";
+const HF_MODEL = process.env.HF_MODEL || "meta-llama/Llama-3.1-8B-Instruct";
+const HF_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
+const _PROVIDERS=[["hf",HF_KEY],["glm",GLM_KEY],["cohere",COHERE_KEY],["deepseek",DEEPSEEK_KEY],["ollama",OLLAMA_BASE],["openai",OPENAI_KEY]];
 const _CONF=_PROVIDERS.filter(p=>p[1]);
 const PROVIDER = (process.env.AI_PROVIDER || (_CONF.length>1?"route":_CONF[0]?_CONF[0][0]:"local")).toLowerCase();
 const GLM_MODEL = process.env.GLM_MODEL || "glm-5.2";
@@ -182,6 +185,25 @@ async function callOpenAI(messages, temperature) {
   if (!out) throw new Error("OpenAI returned an empty response");
   return out.trim();
 }
+async function callHF(messages, temperature) {
+  if (!HF_KEY) throw new Error("HF_API_KEY not configured");
+  const sys = messages.find((m) => m.role === "system")?.content || "";
+  const user = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+  const inputs = `${sys}\n\n${user}`.trim();
+  const r = await fetch(HF_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${HF_KEY}` },
+    body: JSON.stringify({ inputs, parameters: { max_new_tokens: 900, temperature } }),
+    signal: AbortSignal.timeout(45000),
+  });
+  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`HuggingFace ${r.status}: ${t.slice(0, 160)}`); }
+  const j = await r.json();
+  const arr = Array.isArray(j) ? j : [j];
+  let raw = arr[0]?.generated_text || arr[0]?.text || "";
+  if (raw && inputs && raw.startsWith(inputs)) raw = raw.slice(inputs.length).trim();
+  if (!raw) throw new Error("Hugging Face returned an empty response");
+  return raw.trim();
+}
 function buildMessages({ systemPrompt, userMessage, modePrompt = "", history = [] }) {
   let system = (systemPrompt || "");
   if (modePrompt && !/MODE:/.test(system)) system = `${system}\n\n${modePrompt}`;
@@ -228,26 +250,29 @@ function localRespond(messages) {
   return `Here is Illumini's clarity output for: "${snip}"\n\n**Key takeaways**\n• We handled this as a "${mode}" task.\n• Every key fact from the source is preserved.\n• Use Copy to save it, or Save to Vault to keep it forever.\n\n(⚙ Demo responder active — set GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY for live AI.)`;
 }
 
-const PROVIDERS = { glm: GLM_KEY, cohere: COHERE_KEY, deepseek: DEEPSEEK_KEY, ollama: OLLAMA_BASE, openai: OPENAI_KEY };
+const PROVIDERS = { hf: HF_KEY, glm: GLM_KEY, cohere: COHERE_KEY, deepseek: DEEPSEEK_KEY, ollama: OLLAMA_BASE, openai: OPENAI_KEY };
 function orderFor(mode) {
+  if (PROVIDER === "hf") return ["hf"];
   if (PROVIDER === "glm") return ["glm"];
   if (PROVIDER === "cohere") return ["cohere"];
   if (PROVIDER === "deepseek") return ["deepseek"];
   if (PROVIDER === "ollama") return ["ollama"];
   if (PROVIDER === "openai") return ["openai"];
   const avail = Object.keys(PROVIDERS).filter((p) => PROVIDERS[p]);
-  if (/(chat|auto)/i.test(mode || "")) { // Chatbot: Ollama first, OpenAI as last resort
+  if (/(chat|auto)/i.test(mode || "")) { // Chatbot: Hugging Face first, then Ollama, OpenAI last resort
     const o=[];
+    if (avail.includes("hf")) o.push("hf");
     if (avail.includes("ollama")) o.push("ollama");
     if (avail.includes("openai")) o.push("openai");
-    o.push(...avail.filter(a=>a!=="ollama"&&a!=="openai"));
+    o.push(...avail.filter(a=>a!=="hf"&&a!=="ollama"&&a!=="openai"));
     return [...new Set(o)];
   }
   const pref = providerFor(mode);
   const order = [pref, ...avail.filter((p) => p !== pref)];
   if (avail.includes("cohere")) order.unshift("cohere");
-  if (avail.includes("ollama")) order.unshift("ollama"); // Ollama is the preferred provider
-  if (order.includes("openai")){ order.splice(order.indexOf("openai"),1); order.push("openai"); } // OpenAI = true last resort
+  if (avail.includes("ollama")) order.unshift("ollama");
+  if (avail.includes("hf")) order.unshift("hf"); // Hugging Face is the preferred provider
+  if (order.includes("openai")){ order.splice(order.indexOf("openai"),1); order.push("openai"); }
   return [...new Set(order)];
 }
 // Ask the model to reason first, then answer — so Illumini can show its thought process.
@@ -275,6 +300,7 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
   const callers = {
     glm: () => callGlm(messages, temp).then((result) => ({ provider: "glm", model: GLM_MODEL, result })),
     cohere: () => callCohere(messages, temp).then((result) => ({ provider: "cohere", model: COHERE_MODEL, result })),
+    hf: () => callHF(messages, temp).then((result) => ({ provider: "huggingface", model: HF_MODEL, result })),
     deepseek: () => callDeepSeek(messages, temp).then((result) => ({ provider: "deepseek", model: DEEPSEEK_MODEL, result })),
     ollama: () => callOllama(messages, temp).then((result) => ({ provider: "ollama", model: OLLAMA_MODEL, result })),
     openai: () => callOpenAI(messages, temp).then((result) => ({ provider: "openai", model: OPENAI_MODEL, result })),
@@ -505,7 +531,7 @@ const server = http.createServer(async (req, res) => {
   const u = getAuthUser(req);
 
   if (P === "/api/health") {
-    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY || OLLAMA_BASE || OPENAI_KEY), glm: !!GLM_KEY, cohere: !!COHERE_KEY, deepseek: !!DEEPSEEK_KEY, ollama: !!OLLAMA_BASE, openai: !!OPENAI_KEY, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
+    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!(HF_KEY || GLM_KEY || COHERE_KEY || DEEPSEEK_KEY || OLLAMA_BASE || OPENAI_KEY), hf: !!HF_KEY, glm: !!GLM_KEY, cohere: !!COHERE_KEY, deepseek: !!DEEPSEEK_KEY, ollama: !!OLLAMA_BASE, openai: !!OPENAI_KEY, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
   }
 
   /* ---------- Auth ---------- */
@@ -693,6 +719,6 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`\n  ✨ IllumAI v5 running → http://localhost:${PORT}`);
   console.log(`  AI provider: ${PROVIDER}  |  key ${(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY) ? "configured ✓" : "demo mode (set GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY)"}`);
-  console.log(`  Models — GLM: ${GLM_KEY ? GLM_MODEL : "—"} · Cohere: ${COHERE_KEY ? COHERE_MODEL : "—"} · DeepSeek: ${DEEPSEEK_KEY ? DEEPSEEK_MODEL : "—"} · Ollama: ${OLLAMA_BASE ? OLLAMA_MODEL : "—"} · OpenAI: ${OPENAI_KEY ? OPENAI_MODEL : "—"}`);
+  console.log(`  Models — HuggingFace: ${HF_KEY ? HF_MODEL : "—"} · GLM: ${GLM_KEY ? GLM_MODEL : "—"} · Cohere: ${COHERE_KEY ? COHERE_MODEL : "—"} · DeepSeek: ${DEEPSEEK_KEY ? DEEPSEEK_MODEL : "—"} · Ollama: ${OLLAMA_BASE ? OLLAMA_MODEL : "—"} · OpenAI: ${OPENAI_KEY ? OPENAI_MODEL : "—"}`);
   console.log(`  Accounts: ${Object.keys(users).length}  |  data → ${DATA_DIR}`);
 });
