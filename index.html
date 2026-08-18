@@ -807,7 +807,7 @@ function toolPage(cfg){
     }
   });
 }
-const sel=(o,opts)=>`<select class="input" data-opt="${o}"><option value="">${o} — default</option>${opts.map(x=>`<option>${x}</option>`).join("")}</select>`;
+const sel=function(o,opts){const arr=Array.isArray(opts)?opts:Array.prototype.slice.call(arguments,1);return `<select class="input" data-opt="${o}"><option value="">${o} — default</option>${arr.map(x=>`<option>${x}</option>`).join("")}</select>`;};
 P["/summarise"]=toolPage({n:"Text Summariser",e:"✂️",mode:"summarise",cta:"Summarise",outLabel:"Summary",d:"Paste a long article, paper or meeting notes and get an instant summary, key takeaways and skimmable bullet points.",ph:"Paste or type the long text you want summarised here…",opts:sel("Length",["Short","Medium","Detailed"])+sel("Format","Paragraph","Bullets","Both")});
 P["/explain"]=toolPage({n:"Explain",e:"💡",mode:"explain",cta:"Explain",outLabel:"Explanation",d:"Understand complex topics with simple language, alternate examples and memorable metaphors.",ph:"Paste the concept, passage or topic you want explained…",opts:sel("Depth","Simple","Detailed","Study / exam")+sel("Audience","Beginner","Student","Professional")});
 P["/rewrite"]=toolPage({n:"Rewrite",e:"🖊️",mode:"rewrite",cta:"Rewrite",outLabel:"Rewritten text",d:"Refine your writing into any tone with perfect clarity — while preserving your original meaning.",ph:"Paste the text you'd like rewritten…",opts:sel("Tone","Professional","Friendly","Formal","Concise","Persuasive","Academic","Casual")+sel("Length","Shorter","Same","Longer")});
