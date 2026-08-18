@@ -106,7 +106,8 @@ async function callGlm(messages, temperature) {
   const r = await fetch(GLM_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${GLM_KEY}` },
-    body: JSON.stringify({ model: GLM_MODEL, messages, temperature, max_tokens: 2600 }),
+    body: JSON.stringify({ model: GLM_MODEL, messages, temperature, max_tokens: 1800 }),
+    signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`GLM ${r.status}: ${t.slice(0, 300)}`); }
   const j = await r.json();
@@ -120,7 +121,8 @@ async function callCohere(messages, temperature) {
   const r = await fetch("https://api.cohere.com/v2/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${COHERE_KEY}` },
-    body: JSON.stringify({ model: COHERE_MODEL, messages: [{ role: "user", content }], temperature, max_tokens: 2600 }),
+    body: JSON.stringify({ model: COHERE_MODEL, messages: [{ role: "user", content }], temperature, max_tokens: 1800 }),
+    signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`Cohere ${r.status}: ${t.slice(0, 300)}`); }
   const j = await r.json();
@@ -133,7 +135,8 @@ async function callOpenAI(messages, temperature) {
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: OPENAI_MODEL, messages, temperature, max_tokens: 2600 }),
+    body: JSON.stringify({ model: OPENAI_MODEL, messages, temperature, max_tokens: 1800 }),
+    signal: AbortSignal.timeout(15000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`OpenAI ${r.status}: ${t.slice(0, 300)}`); }
   const j = await r.json();
@@ -195,7 +198,9 @@ function orderFor(mode) {
   if (PROVIDER === "openai") return ["openai"];
   const avail = Object.keys(PROVIDERS).filter((p) => PROVIDERS[p]);
   const pref = providerFor(mode);
-  return [pref, ...avail.filter((p) => p !== pref)];
+  const order = [pref, ...avail.filter((p) => p !== pref)];
+  if (avail.includes("cohere")) order.unshift("cohere"); // reliable key first = faster responses
+  return [...new Set(order)];
 }
 // Ask the model to reason first, then answer — so Illumini can show its thought process.
 const THINK_GUIDE = `IMPORTANT OUTPUT FORMAT: show your reasoning BEFORE the final answer.

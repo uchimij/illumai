@@ -413,6 +413,14 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
 .starload svg path{transform-origin:center;animation:starPulse 1.7s ease-in-out infinite}
 @keyframes starSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes starPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.7)}}
+.load-line{display:flex;align-items:flex-start;gap:11px}
+.load-info{display:flex;flex-direction:column;gap:2px;justify-content:center}
+.load-status{font-size:13px;color:var(--ink-2)}
+.load-timer{font-size:11px;color:var(--accent);font-weight:750}
+.think{max-width:100%;margin:0 0 8px}
+.think summary{font-size:12.5px;color:var(--ink-2);cursor:pointer;user-select:none}
+.think summary:hover{color:var(--accent)}
+.think-b{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px;margin-top:8px;line-height:1.6}
 @keyframes illumPulse{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(170deg) scale(.66)}50%{transform:rotate(340deg) scale(1)}75%{transform:rotate(510deg) scale(.7)}100%{transform:rotate(680deg) scale(1)}}
 @media (prefers-reduced-motion:reduce){.illumload,.loadbox .starload,.starload svg path{animation:none}}
 .own-tag{display:inline-flex;align-items:center;gap:4px;margin-left:7px;background:linear-gradient(135deg,#e8a058,#c2532f);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:999px}
@@ -900,6 +908,8 @@ function chatTool(cfg){
     mount(){ chatMount(cfg); }
   });
 }
+const LOAD_STEPS=["Reading your text…","Connecting to Illumini…","Thinking it through…","Writing your answer…","Polishing…"];
+const loadHtml=(step)=>`<div class="load-line"><div class="loadbox"><div class="starload">${STARL}</div></div><div class="load-info"><div class="load-status">${step}</div><div class="load-timer">0s</div></div></div>`;
 function chatMount(cfg){
   const thread=document.getElementById("tthread"),ta=document.getElementById("tin"),
     send=document.getElementById("tsnd"),att=document.getElementById("tatt"),
@@ -917,7 +927,7 @@ function chatMount(cfg){
   const avUser=`<div class="av u">${esc((S.user?.username||"U")[0]?.toUpperCase()||"U")}</div>`;
   const saveT=()=>{try{wr(stk,{msgs,turns})}catch{}};
   turns.forEach(t=>push(t.role==="user"?"user":"ai", t.html));
-  const fmt=(ans,think)=>{const th=(think||"").trim()?`<details class="think"><summary>Illumini's thought process</summary><div class="think-b">${esc(think)}</div></details>`:"";return th+`<div class="b">${esc(ans||"")}</div>`};
+  const fmt=(ans,think,secs)=>{const th=(think||"").trim()?`<details class="think" open><summary>Illumini thought · ${secs||0}s</summary><div class="think-b">${esc(think)}</div></details>`:"";return th+`<div class="b">${esc(ans||"")}</div>`};
   const autoResize=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,150)+"px"};
   function renderAtt(){attc.innerHTML=names.map((n,i)=>`<span class="chip">📎 ${esc(n)} <button data-i="${i}">✕</button></span>`).join("");attc.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;names.splice(i,1);texts.splice(i,1);renderAtt()})}
   att.onclick=(e)=>{e.stopPropagation();const m=document.getElementById("tmenu");m.classList.toggle("on")};
@@ -940,19 +950,25 @@ function chatMount(cfg){
     saveT();
     const history=msgs.slice();
     ta.value="";autoResize();
-    const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="loadbox"><div class="starload">${STARL}</div></div><span class="loading-txt">Illumini is thinking…</span></div>`);
+    const t0=Date.now();let si=0;
+    const loader=push("ai",loadHtml(LOAD_STEPS[0]));
+    const stEl=loader.querySelector(".load-status"),tmEl=loader.querySelector(".load-timer");
+    const iv=setInterval(()=>{si=(si+1)%LOAD_STEPS.length;if(stEl)stEl.textContent=LOAD_STEPS[si];if(tmEl)tmEl.textContent=Math.round((Date.now()-t0)/1000)+"s"},1300);
     busy=true;
     try{
       const res=await ai(content,MODES[cfg.mode]||"",history,cfg.sys||SYS,cfg.mode);
       const ans=res?.result||"";const think=res?.thinking||"";
       msgs.push({role:"user",content});
       msgs.push({role:"assistant",content:ans});
-      const aiHtml=avAi+fmt(ans,think);
+      clearInterval(iv);
+      const secs=Math.round((Date.now()-t0)/1000);
+      const aiHtml=avAi+fmt(ans,think,secs);
       loader.outerHTML=`<div class="msg ai">${aiHtml}</div>`;
       turns.push({role:"ai",html:aiHtml});
       saveT();
       if(ans){logHist(cfg.mode,text,ans);syncLocal()}
     }catch(e){
+      clearInterval(iv);
       loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(e.message)}</div></div>`;
     }finally{busy=false;scroll()}
   }
@@ -1086,7 +1102,7 @@ function draftMount(){
   nw.onclick=()=>{thread.innerHTML=wrap;turns=[];sources=[];busy=false;ta.value="";autoResize();ta.focus();try{wr(stk,{turns:[],sources:[]})}catch{}};
   ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();run()}});
   send.onclick=run;
-  function fmtDraft(raw,srcs,maxA){
+  function fmtDraft(raw,srcs,maxA,secs){
     const parts=String(raw||"").split(/(\[[SIC]\]|\(src \d+\))/g).filter(Boolean);
     let html="",mtr={S:0,I:0,C:0},anchorCount=0;
     for(let i=0;i<parts.length;i++){
@@ -1102,7 +1118,7 @@ function draftMount(){
       <div class="ct">${esc(s.title)}</div><div class="cs">${esc(s.snippet)}</div>
       <div class="cm"><span class="small" style="color:var(--muted)">Credibility</span><span class="cred-bar"><i style="width:${Math.round(s.cred*100)}%"></i></span><b class="small">${Math.round(s.cred*100)}%</b></div>
       <button class="mini quick" data-src="${i}">✓ Quick Verify</button></div>`).join("")}</div></details>`:"";
-    return `<div class="b">${meter}${body}${cites}</div>`;
+    return `<div class="b">${meter}${body}${cites}${secs!=null?`<div class="small muted" style="margin-top:8px">Drafted in ${secs}s</div>`:""}</div>`;
   }
   thread.addEventListener("click",e=>{
     const a=e.target.closest(".anchor");if(a){e.preventDefault();openCite(+a.dataset.src,sources);}
@@ -1116,17 +1132,23 @@ function draftMount(){
     turns.push({role:"user",html:avUser+`<div class="b">${esc(text)}</div>`});
     saveT();
     ta.value="";autoResize();
-    const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="loadbox"><div class="starload">${STARL}</div></div><span class="loading-txt">Retrieving sources and drafting…</span></div>`);
+    const t0=Date.now();let si=0;
+    const loader=push("ai",loadHtml(LOAD_STEPS[0]));
+    const stEl=loader.querySelector(".load-status"),tmEl=loader.querySelector(".load-timer");
+    const iv=setInterval(()=>{si=(si+1)%LOAD_STEPS.length;if(stEl)stEl.textContent=LOAD_STEPS[si];if(tmEl)tmEl.textContent=Math.round((Date.now()-t0)/1000)+"s"},1300);
     busy=true;
     try{
       const j=await api("/api/draft",{method:"POST",body:JSON.stringify({text})});
       if(j.user)setUser(j.user);
       sources=j.sources||[];
-      const aiHtml=avAi+fmtDraft(j.draft,sources,j.maxAnchors);
+      clearInterval(iv);
+      const secs=Math.round((Date.now()-t0)/1000);
+      const aiHtml=avAi+fmtDraft(j.draft,sources,j.maxAnchors,secs);
       loader.outerHTML=`<div class="msg ai">${aiHtml}</div>`;
       turns.push({role:"ai",html:aiHtml});
       saveT();
     }catch(err){
+      clearInterval(iv);
       loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(err.message)}</div></div>`;
     }finally{busy=false;scroll()}
   }
@@ -1431,12 +1453,11 @@ async function boot(){
       const j=await api("/api/me");
       setUser(j.user);
     }catch(e){
-      // Token invalid/expired or server unreachable — fall back to cache or sign in.
-      if(e.message&&/Not signed in/.test(e.message)){ S.token=null; localStorage.removeItem(K.token); S.user=null; }
-      else { setUser(S.userCache); }
+      // No server-validated session — stay signed out (no silent cache login).
+      S.token=null; localStorage.removeItem(K.token); S.user=null;
     }
-  }else if(S.userCache){
-    setUser(S.userCache); // offline fallback; will re-sync when reachable
+  }else{
+    S.user=null;
   }
   render();
 }
