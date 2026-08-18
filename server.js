@@ -87,13 +87,14 @@ function yesterday() { return dateStr(Date.now() - 864e5); }
  * ================================================================== */
 const GLM_KEY = process.env.GLM_API_KEY || process.env.ILU_GLM || "";
 const COHERE_KEY = process.env.COHERE_API_KEY || process.env.ILLUMAI || process.env.ILU_COHERE || "";
-const OPENAI_KEY = process.env.OPENAI_API_KEY || process.env.ILU_OPENAI || "";
+const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || process.env.ILU_DEEPSEEK || process.env.ILU_OPENAI || "";
 const PROVIDER = (process.env.AI_PROVIDER ||
-  (GLM_KEY && COHERE_KEY ? "route" : GLM_KEY ? "glm" : COHERE_KEY ? "cohere" : OPENAI_KEY ? "openai" : "local")).toLowerCase();
+  (GLM_KEY && COHERE_KEY ? "route" : GLM_KEY ? "glm" : COHERE_KEY ? "cohere" : DEEPSEEK_KEY ? "deepseek" : "local")).toLowerCase();
 const GLM_MODEL = process.env.GLM_MODEL || "glm-5.2";
 const GLM_URL = process.env.GLM_API_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
 const COHERE_MODEL = process.env.ILLUMAI_MODEL || "command-r-plus-08-2024";
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const DEEPSEEK_MODEL = process.env.DEEPSEEK_MODEL || "deepseek-chat";
+const DEEPSEEK_URL = process.env.DEEPSEEK_API_URL || "https://api.deepseek.com/chat/completions";
 
 function isPremiumMode(mode, modelHint) {
   if (/reasoner|premium|deep/i.test(modelHint || "")) return true;
@@ -130,18 +131,18 @@ async function callCohere(messages, temperature) {
   if (!out) throw new Error("Cohere returned an empty response");
   return out.trim();
 }
-async function callOpenAI(messages, temperature) {
-  if (!OPENAI_KEY) throw new Error("OPENAI_API_KEY not configured");
-  const r = await fetch("https://api.openai.com/v1/chat/completions", {
+async function callDeepSeek(messages, temperature) {
+  if (!DEEPSEEK_KEY) throw new Error("DEEPSEEK_API_KEY not configured");
+  const r = await fetch(DEEPSEEK_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: OPENAI_MODEL, messages, temperature, max_tokens: 1000 }),
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${DEEPSEEK_KEY}` },
+    body: JSON.stringify({ model: DEEPSEEK_MODEL, messages, temperature, max_tokens: 1000 }),
     signal: AbortSignal.timeout(25000),
   });
-  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`OpenAI ${r.status}: ${t.slice(0, 300)}`); }
+  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`DeepSeek ${r.status}: ${t.slice(0, 300)}`); }
   const j = await r.json();
   const out = j?.choices?.[0]?.message?.content || "";
-  if (!out) throw new Error("OpenAI returned an empty response");
+  if (!out) throw new Error("DeepSeek returned an empty response");
   return out.trim();
 }
 
@@ -180,22 +181,22 @@ function detectIntent(text, requestedMode) {
 function providerFor(mode) {
   if (mode === "explain" || mode === "draft") return "glm";
   if (mode === "summarise" || mode === "rewrite" || mode === "organise") return "cohere";
-  return "openai";
+  return "deepseek";
 }
 function localRespond(messages) {
   const user = [...messages].reverse().find((m) => m.role === "user")?.content || "";
   const system = messages.find((m) => m.role === "system")?.content || "";
   const mode = (system.match(/MODE:\s*(\w+)/i) || [])[1] || "agent";
   const snip = String(user).slice(0, 240);
-  if (mode === "DRAFT") return `Here is your polished draft based on your brief:\n\n"${snip}"\n\n◆ Opening — set the context and the outcome you want.\n◆ Body — a clear, friendly explanation, one idea per short paragraph.\n◆ Call to action — the single next step for the reader.\n\n(⚙ Demo mode: connect GLM_API_KEY, ILLUMAI, or OPENAI_API_KEY for rich, fluent drafts.)`;
-  return `Here is Illumini's clarity output for: "${snip}"\n\n**Key takeaways**\n• We handled this as a "${mode}" task.\n• Every key fact from the source is preserved.\n• Use Copy to save it, or Save to Vault to keep it forever.\n\n(⚙ Demo responder active — set GLM_API_KEY, ILLUMAI, or OPENAI_API_KEY for live AI.)`;
+  if (mode === "DRAFT") return `Here is your polished draft based on your brief:\n\n"${snip}"\n\n◆ Opening — set the context and the outcome you want.\n◆ Body — a clear, friendly explanation, one idea per short paragraph.\n◆ Call to action — the single next step for the reader.\n\n(⚙ Demo mode: connect GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY for rich, fluent drafts.)`;
+  return `Here is Illumini's clarity output for: "${snip}"\n\n**Key takeaways**\n• We handled this as a "${mode}" task.\n• Every key fact from the source is preserved.\n• Use Copy to save it, or Save to Vault to keep it forever.\n\n(⚙ Demo responder active — set GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY for live AI.)`;
 }
 
-const PROVIDERS = { glm: GLM_KEY, cohere: COHERE_KEY, openai: OPENAI_KEY };
+const PROVIDERS = { glm: GLM_KEY, cohere: COHERE_KEY, deepseek: DEEPSEEK_KEY };
 function orderFor(mode) {
   if (PROVIDER === "glm") return ["glm"];
   if (PROVIDER === "cohere") return ["cohere"];
-  if (PROVIDER === "openai") return ["openai"];
+  if (PROVIDER === "deepseek") return ["deepseek"];
   const avail = Object.keys(PROVIDERS).filter((p) => PROVIDERS[p]);
   const pref = providerFor(mode);
   const order = [pref, ...avail.filter((p) => p !== pref)];
@@ -227,7 +228,7 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
   const callers = {
     glm: () => callGlm(messages, temp).then((result) => ({ provider: "glm", model: GLM_MODEL, result })),
     cohere: () => callCohere(messages, temp).then((result) => ({ provider: "cohere", model: COHERE_MODEL, result })),
-    openai: () => callOpenAI(messages, temp).then((result) => ({ provider: "openai", model: OPENAI_MODEL, result })),
+    deepseek: () => callDeepSeek(messages, temp).then((result) => ({ provider: "deepseek", model: DEEPSEEK_MODEL, result })),
   };
   let lastErr;
   for (const p of orderFor(effMode)) {
@@ -238,7 +239,7 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
     } catch (e) { lastErr = e; console.warn("[ai]", p, "failed, trying next:", e.message); }
   }
   const demo = localRespond(messages);
-  return { mode: effMode, provider: "local", model: "demo", result: demo, thinking: "No live AI key is configured, so I'm using the built-in demo responder. Add GLM_API_KEY, ILLUMA (Cohere) or OPENAI_API_KEY to enable real reasoning." };
+  return { mode: effMode, provider: "local", model: "demo", result: demo, thinking: "No live AI key is configured, so I'm using the built-in demo responder. Add GLM_API_KEY, ILLUMA (Cohere) or DEEPSEEK_API_KEY to enable real reasoning." };
 }
 
 /* ==================================================================
@@ -455,7 +456,7 @@ const server = http.createServer(async (req, res) => {
   const u = getAuthUser(req);
 
   if (P === "/api/health") {
-    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!(GLM_KEY || COHERE_KEY || OPENAI_KEY), glm: !!GLM_KEY, cohere: !!COHERE_KEY, openai: !!OPENAI_KEY, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
+    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY), glm: !!GLM_KEY, cohere: !!COHERE_KEY, deepseek: !!DEEPSEEK_KEY, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
   }
 
   /* ---------- Auth ---------- */
@@ -641,7 +642,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n  ✨ IllumAI v5 running → http://localhost:${PORT}`);
-  console.log(`  AI provider: ${PROVIDER}  |  key ${(GLM_KEY || COHERE_KEY || OPENAI_KEY) ? "configured ✓" : "demo mode (set GLM_API_KEY, ILLUMAI, or OPENAI_API_KEY)"}`);
-  console.log(`  Models — GLM: ${GLM_KEY ? GLM_MODEL : "—"} · Cohere: ${COHERE_KEY ? COHERE_MODEL : "—"} · OpenAI: ${OPENAI_KEY ? OPENAI_MODEL : "—"}`);
+  console.log(`  AI provider: ${PROVIDER}  |  key ${(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY) ? "configured ✓" : "demo mode (set GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY)"}`);
+  console.log(`  Models — GLM: ${GLM_KEY ? GLM_MODEL : "—"} · Cohere: ${COHERE_KEY ? COHERE_MODEL : "—"} · DeepSeek: ${DEEPSEEK_KEY ? DEEPSEEK_MODEL : "—"}`);
   console.log(`  Accounts: ${Object.keys(users).length}  |  data → ${DATA_DIR}`);
 });
