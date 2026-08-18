@@ -96,7 +96,7 @@ const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const HF_KEY = process.env.HF_API_KEY || process.env.HF_TOKEN || process.env.ILU_HF || "";
 const HF_MODEL = process.env.HF_MODEL || "meta-llama/Llama-3.1-8B-Instruct"; // primary
 const HF_MODEL2 = process.env.HF_MODEL_FALLBACK || "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"; // fallback
-const HF_URL = (m) => `https://api-inference.huggingface.co/models/${m}`;
+const HF_BASE = process.env.HF_BASE_URL || "https://router.huggingface.co/v1/chat/completions";
 const _PROVIDERS=[["hf",HF_KEY]]; // free Hugging Face models only
 const _CONF=_PROVIDERS.filter(p=>p[1]);
 const PROVIDER = (process.env.AI_PROVIDER || (_CONF.length>1?"route":_CONF[0]?_CONF[0][0]:"local")).toLowerCase();
@@ -188,24 +188,19 @@ async function callOpenAI(messages, temperature) {
 }
 async function callHF(messages, temperature) {
   if (!HF_KEY) throw new Error("HF_API_KEY not configured");
-  const sys = messages.find((m) => m.role === "system")?.content || "";
-  const user = [...messages].reverse().find((m) => m.role === "user")?.content || "";
-  const inputs = `${sys}\n\n${user}`.trim();
   const models = [[HF_MODEL, "llama3.1"], [HF_MODEL2, "deepseek"]];
   let lastErr;
   for (const [model, providerName] of models) {
     try {
-      const r = await fetch(HF_URL(model), {
+      const r = await fetch(HF_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${HF_KEY}` },
-        body: JSON.stringify({ inputs, parameters: { max_new_tokens: 900, temperature } }),
+        body: JSON.stringify({ model, messages, temperature, max_tokens: 900 }),
         signal: AbortSignal.timeout(50000),
       });
       if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`HF ${r.status}: ${t.slice(0, 90)}`); }
       const j = await r.json();
-      const arr = Array.isArray(j) ? j : [j];
-      let raw = arr[0]?.generated_text || arr[0]?.text || "";
-      if (raw && inputs && raw.startsWith(inputs)) raw = raw.slice(inputs.length).trim();
+      let raw = j?.choices?.[0]?.message?.content || "";
       if (!raw) throw new Error("empty response");
       return { provider: providerName, text: raw.trim() };
     } catch (e) { lastErr = e; console.warn("[hf]", providerName, "failed:", e.message, "| cause:", e?.cause?.code || e?.cause?.message || e?.code || "-"); }
