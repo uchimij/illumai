@@ -889,18 +889,24 @@ function chatMount(cfg){
     fileIn=document.getElementById("tfile"),attc=document.getElementById("tattc"),
     nw=document.getElementById("tnew");
   const wrap=thread.innerHTML;
-  let msgs=[],names=[],texts=[],busy=false;
+  const stk=K.chat+":"+cfg.mode;
+  const st0=rd(stk,null)||{msgs:[],turns:[]};
+  let msgs=Array.isArray(st0.msgs)?st0.msgs:[];
+  let turns=Array.isArray(st0.turns)?st0.turns:[];
+  let names=[],texts=[],busy=false;
   const scroll=()=>{thread.scrollTop=thread.scrollHeight};
   const push=(role,html)=>{const d=document.createElement("div");d.className="msg "+role;d.innerHTML=html;thread.appendChild(d);scroll();return d};
   const avAi=`<div class="av">${LOGO}</div>`;
   const avUser=`<div class="av u">${esc((S.user?.username||"U")[0]?.toUpperCase()||"U")}</div>`;
+  const saveT=()=>{try{wr(stk,{msgs,turns})}catch{}};
+  turns.forEach(t=>push(t.role==="user"?"user":"ai", t.html));
   const fmt=(ans,think)=>{const th=(think||"").trim()?`<details class="think"><summary>Illumini's thought process</summary><div class="think-b">${esc(think)}</div></details>`:"";return th+`<div class="b">${esc(ans||"")}</div>`};
   const autoResize=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,150)+"px"};
   function renderAtt(){attc.innerHTML=names.map((n,i)=>`<span class="chip">📎 ${esc(n)} <button data-i="${i}">✕</button></span>`).join("");attc.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;names.splice(i,1);texts.splice(i,1);renderAtt()})}
   att.onclick=()=>fileIn.click();
   fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{if(busy)return;f.text().then(t=>{names.push(f.name);texts.push(String(t||"").slice(0,8000));renderAtt()}).catch(()=>{names.push(f.name);texts.push("");renderAtt()})});fileIn.value=""};
   document.querySelectorAll("#tsug .sug").forEach(s=>s.onclick=()=>{if(busy)return;ta.value=s.dataset.q;autoResize();run()});
-  nw.onclick=()=>{thread.innerHTML=wrap;msgs=[];names=[];texts=[];attc.innerHTML="";busy=false;ta.value="";autoResize();ta.focus()};
+  nw.onclick=()=>{thread.innerHTML=wrap;msgs=[];turns=[];names=[];texts=[];attc.innerHTML="";busy=false;ta.value="";autoResize();ta.focus();try{wr(stk,{msgs:[],turns:[]})}catch{}};
   ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();run()}});
   send.onclick=run;
   async function run(){
@@ -909,7 +915,10 @@ function chatMount(cfg){
     const attach=names.map((n,i)=>`\n\n[Attachment ${i+1}: ${n}]\n${texts[i]||""}`).join("");
     const content=(text+attach).trim();
     if(!content)return toast("Type or attach a file first.");
-    push("user",avUser+`<div class="b">${esc(text+(names.length?`\n\n📎 ${names.join(", ")}`:""))}</div>`);
+    const userHtml=avUser+`<div class="b">${esc(text+(names.length?`\n\n📎 ${names.join(", ")}`:""))}</div>`;
+    push("user",userHtml);
+    turns.push({role:"user",html:userHtml});
+    saveT();
     const history=msgs.slice();
     ta.value="";autoResize();
     const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="loadbox"><div class="starload">${STARL}</div></div><span class="loading-txt">Illumini is thinking…</span></div>`);
@@ -919,7 +928,10 @@ function chatMount(cfg){
       const ans=res?.result||"";const think=res?.thinking||"";
       msgs.push({role:"user",content});
       msgs.push({role:"assistant",content:ans});
-      loader.outerHTML=`<div class="msg ai">${avAi}${fmt(ans,think)}</div>`;
+      const aiHtml=avAi+fmt(ans,think);
+      loader.outerHTML=`<div class="msg ai">${aiHtml}</div>`;
+      turns.push({role:"ai",html:aiHtml});
+      saveT();
       if(ans){logHist(cfg.mode,text,ans);syncLocal()}
     }catch(e){
       loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(e.message)}</div></div>`;
@@ -1035,11 +1047,17 @@ function draftMount(){
   const push=(role,html)=>{const d=document.createElement("div");d.className="msg "+role;d.innerHTML=html;thread.appendChild(d);scroll();return d};
   const avAi=`<div class="av">${LOGO}</div>`;
   const avUser=`<div class="av u">${esc((S.user?.username||"U")[0]?.toUpperCase()||"U")}</div>`;
+  const stk=K.chat+":draft";
+  const st0=rd(stk,null)||{turns:[],sources:[]};
+  sources=Array.isArray(st0.sources)?st0.sources:[];
+  let turns=Array.isArray(st0.turns)?st0.turns:[];
+  const saveT=()=>{try{wr(stk,{turns,sources})}catch{}};
+  turns.forEach(t=>push(t.role==="user"?"user":"ai", t.html));
   const autoResize=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,150)+"px"};
   att.onclick=()=>fileIn.click();
   fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{f.text().then(t=>{ta.value=(ta.value?ta.value+"\n":"")+String(t||"").slice(0,8000);autoResize()})});fileIn.value=""};
   document.querySelectorAll("#dsug .sug").forEach(s=>s.onclick=()=>{if(busy)return;ta.value=s.dataset.q;autoResize();run()});
-  nw.onclick=()=>{thread.innerHTML=wrap;busy=false;ta.value="";autoResize();ta.focus()};
+  nw.onclick=()=>{thread.innerHTML=wrap;turns=[];sources=[];busy=false;ta.value="";autoResize();ta.focus();try{wr(stk,{turns:[],sources:[]})}catch{}};
   ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();run()}});
   send.onclick=run;
   function fmtDraft(raw,srcs,maxA){
@@ -1069,6 +1087,8 @@ function draftMount(){
     const text=ta.value.trim();if(!text)return toast("Enter a topic first.");
     if(!S.user||!isPaid()){toast("Cognitive Drafting is a Pro feature.");go("/checkout?plan=pro");return}
     push("user",avUser+`<div class="b">${esc(text)}</div>`);
+    turns.push({role:"user",html:avUser+`<div class="b">${esc(text)}</div>`});
+    saveT();
     ta.value="";autoResize();
     const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="loadbox"><div class="starload">${STARL}</div></div><span class="loading-txt">Retrieving sources and drafting…</span></div>`);
     busy=true;
@@ -1076,7 +1096,10 @@ function draftMount(){
       const j=await api("/api/draft",{method:"POST",body:JSON.stringify({text})});
       if(j.user)setUser(j.user);
       sources=j.sources||[];
-      loader.outerHTML=`<div class="msg ai">${avAi}${fmtDraft(j.draft,sources,j.maxAnchors)}</div>`;
+      const aiHtml=avAi+fmtDraft(j.draft,sources,j.maxAnchors);
+      loader.outerHTML=`<div class="msg ai">${aiHtml}</div>`;
+      turns.push({role:"ai",html:aiHtml});
+      saveT();
     }catch(err){
       loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(err.message)}</div></div>`;
     }finally{busy=false;scroll()}
