@@ -197,12 +197,27 @@ function orderFor(mode) {
   const pref = providerFor(mode);
   return [pref, ...avail.filter((p) => p !== pref)];
 }
+// Ask the model to reason first, then answer — so Illumini can show its thought process.
+const THINK_GUIDE = `IMPORTANT OUTPUT FORMAT: show your reasoning BEFORE the final answer.
+FIRST, write the single line "THINKING:" followed by 3-5 short bullet points of your reasoning, plan and what you will include (keep it under ~120 words).
+THEN, on a new line write "ANSWER:" and give your complete, polished final answer.
+Never repeat the THINKING content inside the ANSWER. The ANSWER is what the user reads.`;
+function splitReason(raw) {
+  const s = String(raw || "").trim();
+  const idx = s.indexOf("ANSWER:");
+  if (idx >= 0) {
+    const th = s.slice(0, idx).replace(/^THINKING\s*:/i, "").trim();
+    return { thinking: th, result: s.slice(idx + 7).trim() };
+  }
+  return { thinking: "", result: s };
+}
 async function runAI({ systemPrompt, userText, modePrompt = "", model = "", history = [], mode = "" }) {
   let effMode, effPrompt;
   if (modePrompt && /MODE:\s*(\w+)/.test(modePrompt)) { effMode = modePrompt.match(/MODE:\s*(\w+)/i)[1].toLowerCase(); effPrompt = modePrompt; }
   else { const d = detectIntent(userText, mode); effMode = d.mode; effPrompt = d.prompt; }
   const premium = isPremiumMode(effPrompt + " " + effMode, model);
-  const messages = buildMessages({ systemPrompt, userMessage: userText, modePrompt: effPrompt, history });
+  const sys = `${systemPrompt || ""}\n\n${THINK_GUIDE}`;
+  const messages = buildMessages({ systemPrompt: sys, userMessage: userText, modePrompt: effPrompt, history });
   const temp = premium ? 0.5 : 0.3;
   const callers = {
     glm: () => callGlm(messages, temp).then((result) => ({ provider: "glm", model: GLM_MODEL, result })),
@@ -211,9 +226,14 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
   };
   let lastErr;
   for (const p of orderFor(effMode)) {
-    try { return { mode: effMode, ...(await callers[p]()) }; } catch (e) { lastErr = e; console.warn("[ai-router]", p, "failed, trying next:", e.message); }
+    try {
+      const out = await callers[p]();
+      const { thinking, result } = splitReason(out.result);
+      return { mode: effMode, provider: out.provider, model: out.model, result, thinking };
+    } catch (e) { lastErr = e; console.warn("[ai]", p, "failed, trying next:", e.message); }
   }
-  return { mode: effMode, provider: "local", model: "demo", result: localRespond(messages) };
+  const demo = localRespond(messages);
+  return { mode: effMode, provider: "local", model: "demo", result: demo, thinking: "No live AI key is configured, so I'm using the built-in demo responder. Add GLM_API_KEY, ILLUMA (Cohere) or OPENAI_API_KEY to enable real reasoning." };
 }
 
 /* ==================================================================
@@ -489,9 +509,9 @@ const server = http.createServer(async (req, res) => {
           return json(res, 402, { ok: false, error: `You've used all ${cap} illuminations for this billing cycle. It resets at renewal.`, code: "LIMIT" });
       }
       consume(u); tickStreak(u); saveStore(USERS_FILE, users);
-      const { provider, model: usedModel, result, mode: effMode } = await runAI({ systemPrompt, userText, modePrompt, model, history, mode });
+      const { provider, model: usedModel, result, thinking, mode: effMode } = await runAI({ systemPrompt, userText, modePrompt, model, history, mode });
       logRow({ action: "illumination", input: userText, output: result, meta: { provider, model: usedModel, user: u.email, mode: effMode } });
-      return json(res, 200, { ok: true, result, provider, mode: effMode, user: publicUser(u) });
+      return json(res, 200, { ok: true, result, thinking, provider, mode: effMode, user: publicUser(u) });
     } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
   }
 

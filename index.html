@@ -353,6 +353,56 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
   .src-doc{flex-direction:column}
   .cite-panel{width:100%;position:static}
 }
+
+/* ============================================================
+   Chat-style writing tools (req: answer above input, thinking,
+   attachments, suggestions, IllumAI loading animation)
+   ============================================================ */
+.chatview{display:flex;flex-direction:column;height:calc(100vh - 190px);min-height:460px}
+.chatview .head{margin-bottom:16px}
+.chthread{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:2px 2px 14px;scroll-behavior:smooth}
+.chthread::-webkit-scrollbar{width:8px}
+.chthread::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.msg{display:flex;gap:10px;max-width:780px;align-items:flex-start}
+.msg.user{align-self:flex-end;flex-direction:row-reverse}
+.msg .av{width:30px;height:30px;border-radius:9px;overflow:hidden;flex-shrink:0;box-shadow:var(--shadow-xs)}
+.msg .av svg{width:100%;height:100%;display:block}
+.msg .av.u{background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px}
+.msg .b{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 14px;font-size:14px;line-height:1.65;white-space:pre-wrap;word-break:break-word;min-width:60px}
+.msg.user .b{background:var(--accent-soft);border-color:var(--accent-line)}
+.mutedb{color:var(--muted)}
+.think{margin-bottom:2px;font-size:12px}
+.think summary{cursor:pointer;user-select:none;font-weight:650;color:var(--faint);list-style:none}
+.think summary::-webkit-details-marker{display:none}
+.think summary::before{content:"🪞 "}
+.think .think-b{margin-top:7px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:9px 12px;font-size:12.5px;color:var(--ink-2);line-height:1.6;white-space:pre-wrap}
+.chbar{margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:11px;box-shadow:var(--shadow-md)}
+.ch-row{display:flex;gap:9px;align-items:flex-end}
+.ch-row .attach{width:42px;height:42px;flex-shrink:0;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--r-md);cursor:pointer;font-size:17px;transition:all .18s}
+.ch-row .attach:hover{border-color:var(--accent-line)}
+.ch-row textarea{flex:1;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2);padding:10px 13px;font-family:inherit;font-size:14px;color:var(--ink);resize:none;min-height:42px;max-height:150px;line-height:1.5}
+.ch-row textarea:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.att-c{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.att-c .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:650}
+.att-c .chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1}
+.ch-new{margin-top:9px;font-size:12px;font-weight:650;color:var(--accent);cursor:pointer;user-select:none;letter-spacing:.01em}
+.ch-new:hover{text-decoration:underline}
+.sug-wrap{margin-top:10px}
+.sug-lb{font-size:10.5px;font-weight:750;letter-spacing:.08em;color:var(--faint);text-transform:uppercase}
+.sug-chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:7px}
+.sug{font-size:12.5px;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:5px 13px;cursor:pointer;font-family:inherit;transition:all .18s}
+.sug:hover{color:var(--accent);border-color:var(--accent-line)}
+.illumload{width:42px;height:42px;border-radius:12px;overflow:hidden;flex-shrink:0;animation:illumPulse 1.5s ease-in-out infinite;box-shadow:var(--shadow-sm)}
+.illumload svg{width:100%;height:100%;display:block}
+.loading-txt{font-size:13px;color:var(--muted)}
+@keyframes illumPulse{
+  0%{transform:rotate(0deg) scale(1)}
+  25%{transform:rotate(170deg) scale(.66)}
+  50%{transform:rotate(340deg) scale(1)}
+  75%{transform:rotate(510deg) scale(.7)}
+  100%{transform:rotate(680deg) scale(1)}
+}
+@media (prefers-reduced-motion:reduce){.illumload{animation:none}}
 </style>
 </head>
 <body>
@@ -575,7 +625,7 @@ async function ai(userText,modePrompt,history,systemPrompt,mode){
   try{
     const j=await api("/api/ai",{method:"POST",body:JSON.stringify({model:"auto",systemPrompt:systemPrompt||SYS,userText,modePrompt:modePrompt||"",history:history||[],mode:mode||""})});
     if(j.user) setUser(j.user);
-    return j.result||"";
+    return j;
   }catch(e){
     if(e.code==="NO_CREDITS"){toast("You're out of illuminations.");go("/plans");}
     if(e.code==="LIMIT"){toast("Plan limit reached for this cycle.");go("/plans");}
@@ -765,7 +815,7 @@ Draft a job application email for me…"></textarea>
       const q=ta.value.trim(); if(!q)return toast("Tell Illumini what you need.");
       if(busy)return; busy=true; orb.classList.add("busy"); st.textContent="Illuminating…";
       out.className="result"; out.textContent="Illumini is thinking…"; act.style.display="none";
-      try{ last=await ai(q,"",[],SYS,"auto"); out.textContent=last; act.style.display="flex"; st.textContent="Done ✓"; logHist("agent",q,last); syncLocal(); }
+      try{ const j=await ai(q,"",[],SYS,"auto"); last=j.result||""; out.innerHTML=(j.thinking?`<details class="think"><summary>Illumini's thought process</summary><div class="think-b">${esc(j.thinking)}</div></details>`:"")+esc(last); act.style.display="flex"; st.textContent="Done ✓"; logHist("agent",q,last); syncLocal(); }
       catch(e){ out.textContent="⚠ "+e.message; st.textContent="Ready"; }
       finally{ busy=false; orb.classList.remove("busy"); }
     };
@@ -775,44 +825,98 @@ Draft a job application email for me…"></textarea>
 });
 
 /* ---------- Generic tool page ---------- */
-function toolPage(cfg){
+/* ============================================================
+   Chat-style writing tools — answer ABOVE the input, with
+   thinking, attachments, suggestions and the IllumAI loader.
+   ============================================================ */
+const SUGG={
+  summarise:["Summarise this article into key points","Make a short TL;DR of this","Pull the 5 key takeaways","Summarise in 5 sentences or less"],
+  explain:["Explain this like I'm a beginner","What does this mean in simple terms?","Break this down step by step","Give me an analogy for this"],
+  rewrite:["Make this more professional","Rewrite this more warmly","Make it more concise","Improve the grammar and flow"],
+  organise:["Turn this into a clear task list","Organise into grouped notes","Make study cards from this","Clean up this messy text"],
+  draft:["Draft a thank-you email to a client","Draft a friendly announcement","Draft a job application email","Draft a follow-up message"]
+};
+const CHAT_WELCOME={
+  summarise:"I'll condense long text into its key points. Paste an article, paper or notes below (or attach a file), and I'll show my thinking, then give you the summary.",
+  explain:"I'll explain any concept simply — with an analogy and step-by-step build-up. Paste a passage below or attach a file.",
+  rewrite:"I'll rewrite any text into a clearer, better version in the tone you want. Paste the text below or attach a file.",
+  organise:"I'll turn messy notes into a clean task list, grouped notes and study cards. Paste them below or attach a file.",
+  draft:"I'll draft a polished email or message from a short brief. Tell me what you need below — or attach a document — and I'll write it."
+};
+
+function chatTool(cfg){
   return()=>({title:cfg.n,html:`
-    <div class="head"><h1><span class="h-emoji">${cfg.e}</span>${cfg.n}</h1><p class="lede">${cfg.d}</p></div>
-    <div class="card">
-      <textarea class="textarea" id="tin" placeholder="${cfg.ph}"></textarea>
-      ${cfg.opts?`<label class="lb" style="margin-top:18px">Options</label><div class="row">${cfg.opts}</div>`:""}
-      <div class="chips" style="margin-top:18px"><button class="btn btn-primary" id="tgo">✨ ${cfg.cta}</button><button class="btn btn-ghost" id="tclr">Clear</button></div>
-    </div>
-    <div class="card">
-      <h3 style="margin-bottom:12px">${cfg.outLabel}</h3>
-      <div id="tout" class="result empty">Illumini's ${cfg.outLabel.toLowerCase()} will appear here…</div>
-      <div class="chips" id="tact" style="display:none"><button class="mini" id="tcopy">Copy</button><button class="mini" id="tsave">Save to Vault</button></div>
+    <div class="chatview">
+      <div class="head ch-head"><h1><span class="h-emoji">${cfg.e}</span>${cfg.n}</h1><p class="lede">${cfg.d}</p></div>
+      <div class="chthread" id="tthread">
+        <div class="msg ai"><div class="av">${LOGO}</div><div class="b mutedb">${CHAT_WELCOME[cfg.mode]}</div></div>
+      </div>
+      <div class="chbar">
+        <div class="att-c" id="tattc"></div>
+        <div class="ch-row">
+          <button class="attach" id="tatt" title="Attach a file">📎</button>
+          <textarea id="tin" rows="1" placeholder="${cfg.ph}"></textarea>
+          <button class="btn btn-primary" id="tsnd">Send</button>
+        </div>
+        <div class="ch-new" id="tnew">＋ Start a new ${cfg.n} ➜</div>
+        <div class="sug-wrap"><div class="sug-lb">Try these</div>
+          <div class="sug-chips" id="tsug">${SUGG[cfg.mode].map(s=>`<button class="sug" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
+        </div>
+      </div>
+      <input type="file" id="tfile" class="hidden" multiple />
     </div>`,
-    mount(){
-      const ta=document.getElementById("tin"),out=document.getElementById("tout"),act=document.getElementById("tact"),btn=document.getElementById("tgo");
-      let last="";
-      document.getElementById("tclr").onclick=()=>{ta.value="";out.className="result empty";out.textContent="Illumini's "+cfg.outLabel.toLowerCase()+" will appear here…";act.style.display="none"};
-      btn.onclick=async()=>{
-        const t=ta.value.trim(); if(!t)return toast("Please paste some text first.");
-        btn.disabled=true; btn.textContent="Illuminating…";
-        out.className="result"; out.textContent="Illumini is working…"; act.style.display="none";
-        let mp=MODES[cfg.mode];
-        document.querySelectorAll("[data-opt]").forEach(s=>{ if(s.value) mp+=`\n${s.dataset.opt}: ${s.value}.` });
-        try{ last=await ai(t,mp,[],SYS); out.textContent=last; act.style.display="flex"; logHist(cfg.mode,t,last); syncLocal(); }
-        catch(e){ out.textContent="⚠ "+e.message; }
-        finally{ btn.disabled=false; btn.textContent="✨ "+cfg.cta; }
-      };
-      document.getElementById("tcopy").onclick=()=>{navigator.clipboard?.writeText(last).then(()=>toast("Copied"))};
-      document.getElementById("tsave").onclick=()=>{saveVault(cfg.mode,ta.value.slice(0,44),last);toast("Saved to Vault ✓");syncLocal()};
-    }
+    mount(){ chatMount(cfg); }
   });
 }
+function chatMount(cfg){
+  const thread=document.getElementById("tthread"),ta=document.getElementById("tin"),
+    send=document.getElementById("tsnd"),att=document.getElementById("tatt"),
+    fileIn=document.getElementById("tfile"),attc=document.getElementById("tattc"),
+    nw=document.getElementById("tnew");
+  const wrap=thread.innerHTML;
+  let msgs=[],names=[],texts=[],busy=false;
+  const scroll=()=>{thread.scrollTop=thread.scrollHeight};
+  const push=(role,html)=>{const d=document.createElement("div");d.className="msg "+role;d.innerHTML=html;thread.appendChild(d);scroll();return d};
+  const avAi=`<div class="av">${LOGO}</div>`;
+  const avUser=`<div class="av u">${esc((S.user?.username||"U")[0]?.toUpperCase()||"U")}</div>`;
+  const fmt=(ans,think)=>{const th=(think||"").trim()?`<details class="think"><summary>Illumini's thought process</summary><div class="think-b">${esc(think)}</div></details>`:"";return th+`<div class="b">${esc(ans||"")}</div>`};
+  const autoResize=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,150)+"px"};
+  function renderAtt(){attc.innerHTML=names.map((n,i)=>`<span class="chip">📎 ${esc(n)} <button data-i="${i}">✕</button></span>`).join("");attc.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;names.splice(i,1);texts.splice(i,1);renderAtt()})}
+  att.onclick=()=>fileIn.click();
+  fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{if(busy)return;f.text().then(t=>{names.push(f.name);texts.push(String(t||"").slice(0,8000));renderAtt()}).catch(()=>{names.push(f.name);texts.push("");renderAtt()})});fileIn.value=""};
+  document.querySelectorAll("#tsug .sug").forEach(s=>s.onclick=()=>{if(busy)return;ta.value=s.dataset.q;autoResize();run()});
+  nw.onclick=()=>{thread.innerHTML=wrap;msgs=[];names=[];texts=[];attc.innerHTML="";busy=false;ta.value="";autoResize();ta.focus()};
+  ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();run()}});
+  send.onclick=run;
+  async function run(){
+    if(busy)return;
+    const text=ta.value.trim();
+    const attach=names.map((n,i)=>`\n\n[Attachment ${i+1}: ${n}]\n${texts[i]||""}`).join("");
+    const content=(text+attach).trim();
+    if(!content)return toast("Type or attach a file first.");
+    push("user",avUser+`<div class="b">${esc(text+(names.length?`\n\n📎 ${names.join(", ")}`:""))}</div>`);
+    const history=msgs.slice();
+    ta.value="";autoResize();
+    const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="illumload">${LOGO}</div><span class="loading-txt">Illumini is thinking…</span></div>`);
+    busy=true;
+    try{
+      const res=await ai(content,MODES[cfg.mode]||"",history,SYS,cfg.mode);
+      const ans=res?.result||"";const think=res?.thinking||"";
+      msgs.push({role:"user",content});
+      msgs.push({role:"assistant",content:ans});
+      loader.outerHTML=`<div class="msg ai">${avAi}${fmt(ans,think)}</div>`;
+      if(ans){logHist(cfg.mode,text,ans);syncLocal()}
+    }catch(e){
+      loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(e.message)}</div></div>`;
+    }finally{busy=false;scroll()}
+  }
+}
 const sel=function(o,opts){const arr=Array.isArray(opts)?opts:Array.prototype.slice.call(arguments,1);return `<select class="input" data-opt="${o}"><option value="">${o} — default</option>${arr.map(x=>`<option>${x}</option>`).join("")}</select>`;};
-P["/summarise"]=toolPage({n:"Text Summariser",e:"✂️",mode:"summarise",cta:"Summarise",outLabel:"Summary",d:"Paste a long article, paper or meeting notes and get an instant summary, key takeaways and skimmable bullet points.",ph:"Paste or type the long text you want summarised here…",opts:sel("Length",["Short","Medium","Detailed"])+sel("Format","Paragraph","Bullets","Both")});
-P["/explain"]=toolPage({n:"Explain",e:"💡",mode:"explain",cta:"Explain",outLabel:"Explanation",d:"Understand complex topics with simple language, alternate examples and memorable metaphors.",ph:"Paste the concept, passage or topic you want explained…",opts:sel("Depth","Simple","Detailed","Study / exam")+sel("Audience","Beginner","Student","Professional")});
-P["/rewrite"]=toolPage({n:"Rewrite",e:"🖊️",mode:"rewrite",cta:"Rewrite",outLabel:"Rewritten text",d:"Refine your writing into any tone with perfect clarity — while preserving your original meaning.",ph:"Paste the text you'd like rewritten…",opts:sel("Tone","Professional","Friendly","Formal","Concise","Persuasive","Academic","Casual")+sel("Length","Shorter","Same","Longer")});
-P["/organise"]=toolPage({n:"Organise",e:"🗂️",mode:"organise",cta:"Organise",outLabel:"Organised output",d:"Turn messy notes and ideas into a clean task list, grouped notes and ready-to-study flashcards.",ph:"Paste your messy notes, meeting minutes or brain-dump…",opts:sel("Style","Task-first","Notes-first","Study cards")});
-P["/draft"]=toolPage({n:"Draft",e:"✉️",mode:"draft",cta:"Draft it",outLabel:"Your draft",d:"Compose polished emails and messages from a simple brief — pick a type and let Illumini write it.",ph:"Describe what you need written. e.g. A thank-you email to a client named Sam…",opts:sel("Type","Email","Message","Announcement","Social post","Invitation","Thank-you")+sel("Tone","Professional","Friendly","Formal","Persuasive")});
+P["/summarise"]=chatTool({n:"Text Summariser",e:"✂️",mode:"summarise",d:"Paste a long article, paper or meeting notes and get an instant summary, key takeaways and skimmable bullet points.",ph:"Paste or type the long text you want summarised…"});
+P["/explain"]=chatTool({n:"Explain",e:"💡",mode:"explain",d:"Understand complex topics with simple language, alternate examples and memorable metaphors.",ph:"Paste the concept or passage you want explained…"});
+P["/rewrite"]=chatTool({n:"Rewrite",e:"🖊️",mode:"rewrite",d:"Refine your writing into any tone with perfect clarity — while preserving your original meaning.",ph:"Paste the text you'd like rewritten…"});
+P["/organise"]=chatTool({n:"Organise",e:"🗂️",mode:"organise",d:"Turn messy notes and ideas into a clean task list, grouped notes and ready-to-study flashcards.",ph:"Paste your messy notes, meeting minutes or brain-dump…"});
+P["/draft"]=chatTool({n:"Draft",e:"✉️",mode:"draft",d:"Compose polished emails and messages from a simple brief — tell Illumini the type and tone and it will write it.",ph:"Describe what you need written. e.g. A thank-you email to a client named Sam…"});
 
 /* ---------- Templates ---------- */
 const TPL=[
@@ -845,7 +949,7 @@ P["/templates"]=()=>({title:"AI Writing Templates",html:`
     document.getElementById("tplGo").onclick=async()=>{
       const t=ti.value.trim(); if(!t)return toast("Add a short brief first.");
       out.className="result"; out.textContent="Illumini is drafting…"; act.style.display="none";
-      try{ last=await ai(t,MODES.draft,[],SYS); out.textContent=last; act.style.display="flex"; logHist("template:"+cur.n,t,last); syncLocal(); }
+      try{ const j=await ai(t,MODES.draft,[],SYS); last=j.result||""; out.textContent=last; act.style.display="flex"; logHist("template:"+cur.n,t,last); syncLocal(); }
       catch(e){ out.textContent="⚠ "+e.message }
     };
     document.getElementById("tplSave").onclick=()=>{saveVault("template",cur.n,last);toast("Saved to Vault ✓");syncLocal()};

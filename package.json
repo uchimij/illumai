@@ -1,6 +1,6 @@
 {
   "name": "illumai",
-  "version": "5.1.0",
+  "version": "5.2.0",
   "description": "IllumAI v5 — Illumini auto-router agent (summarise/explain/rewrite/organise/draft/chat) over Cohere+GLM+OpenAI, source-anchored drafts (RAG), AI Humanizer + AI Chatbot (coming soon), real accounts, subscription limits, Stripe checkout.",
   "type": "module",
   "main": "server.js",
