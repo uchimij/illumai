@@ -1,0 +1,32 @@
+# IllumAI v5 — Render Blueprint.
+# Naming the service "illumai" gives the default domain:
+#   https://illumai.onrender.com   (your live URL)
+# Add a persistent Disk at /data so accounts & usage survive restarts.
+services:
+  - type: web
+    name: illumai
+    runtime: node
+    plan: free
+    buildCommand: echo "static — nothing to build"
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8787
+      # AI providers — set at least ONE as a Render secret (Render env name = these).
+      - key: GLM_API_KEY
+        sync: false
+      - key: ILLUMAI
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      # Payments — Stripe secret key to enable real checkout (optional until you activate).
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: ILLUMAI_CURRENCY
+        sync: false
+    disk:
+      name: illumai-data
+      mountPath: /data
+      sizeGB: 1

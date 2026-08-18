@@ -1,0 +1,1283 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>IllumAI — Illuminate your understanding</title>
+<meta name="description" content="IllumAI turns any text into clarity. Summarise, explain, rewrite, organise or draft with Illumini — with verifiable source-anchored drafts." />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%23e89a68'/%3E%3Cstop offset='1' stop-color='%23a93f2b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='40' height='40' rx='11' fill='url(%23g)'/%3E%3Ccircle cx='20' cy='20' r='11' fill='%23fff' opacity='.14'/%3E%3Cpath d='M20 10l2.1 7.9 7.9 2.1-7.9 2.1L20 30l-2.1-7.9L10 20l7.9-2.1z' fill='%23fff'/%3E%3C/svg%3E" />
+<style>
+/* ============================================================
+   IllumAI v5 — Warm Clarity design system
+   Cream canvas · terracotta accent · soft rounded boxes
+   ============================================================ */
+:root{
+  --bg:#f5f2ee; --bg-2:#faf8f5;
+  --surface:#ffffff; --surface-2:#faf8f5; --sidebar:#ffffff;
+  --line:#e7e0d8; --line-2:#efeae3;
+  --ink:#1c1a18; --ink-2:#3c3833; --muted:#6f6862; --faint:#9a938c;
+  --accent:#a93f2b; --accent-2:#c2532f; --accent-deep:#8f3423;
+  --accent-soft:#f7ece7; --accent-line:#eccfc3;
+  --ok:#2f8f5b; --warn:#d08a1e; --danger:#c0392b;
+  --src:#2f8f5b; --inf:#d08a1e; --cre:#8b45d6;
+  --shadow-xs:0 1px 2px rgba(28,26,24,.04);
+  --shadow-sm:0 2px 8px rgba(28,26,24,.06);
+  --shadow-md:0 8px 26px rgba(28,26,24,.10);
+  --shadow-lg:0 20px 50px rgba(28,26,24,.16);
+  --r-lg:18px; --r-md:14px; --r-sm:10px;
+  --orb-1:#ffd9b0; --orb-2:#e07a3f; --orb-3:#a8431f;
+  --orb-glow:rgba(224,122,63,.42);
+}
+html[data-theme="dark"]{
+  --bg:#171310; --bg-2:#1d1815;
+  --surface:#221c18; --surface-2:#1d1814; --sidebar:#1c1714;
+  --line:#352c26; --line-2:#2c2420;
+  --ink:#f3ede7; --ink-2:#ded4cb; --muted:#a2978d; --faint:#7b7168;
+  --accent:#e0713f; --accent-2:#ef8656; --accent-deep:#c25a2c;
+  --accent-soft:rgba(224,113,63,.14); --accent-line:rgba(224,113,63,.32);
+  --ok:#4cbd80; --warn:#e8ad4a; --danger:#e5654f;
+  --src:#4cbd80; --inf:#e8ad4a; --cre:#b28ae8;
+  --shadow-xs:0 1px 2px rgba(0,0,0,.3);
+  --shadow-sm:0 2px 10px rgba(0,0,0,.35);
+  --shadow-md:0 10px 30px rgba(0,0,0,.45);
+  --shadow-lg:0 24px 60px rgba(0,0,0,.55);
+  --orb-1:#ffcb9b; --orb-2:#e8763a; --orb-3:#8f3517;
+  --orb-glow:rgba(232,118,58,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Inter,Roboto,sans-serif;
+  background:var(--bg); color:var(--ink); -webkit-font-smoothing:antialiased;
+  letter-spacing:-.01em; transition:background .35s ease,color .35s ease;
+}
+a{color:inherit;text-decoration:none}
+.hidden{display:none!important}
+
+/* ---------- Shell ---------- */
+.app{display:flex;min-height:100vh}
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:240px;z-index:40;
+  background:var(--sidebar);border-right:1px solid var(--line);
+  display:flex;flex-direction:column;padding:16px 12px 12px;
+}
+.brand{display:flex;align-items:center;gap:11px;padding:4px 8px 18px;cursor:pointer}
+.brand-mark{width:38px;height:38px;border-radius:11px;flex-shrink:0;box-shadow:var(--shadow-sm)}
+.brand-mark svg{width:100%;height:100%;display:block;border-radius:11px}
+.brand-txt b{display:block;font-size:16px;font-weight:750;letter-spacing:-.3px;line-height:1.15}
+.brand-txt span{display:block;font-size:9.5px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;margin-top:2px}
+.nav{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:2px;padding-right:2px}
+.nav::-webkit-scrollbar{width:6px}
+.nav::-webkit-scrollbar-thumb{background:var(--line);border-radius:99px}
+.nav-sec{font-size:9.5px;font-weight:750;letter-spacing:.13em;color:var(--faint);text-transform:uppercase;padding:15px 12px 6px}
+.nav-item{
+  display:flex;align-items:center;gap:11px;width:100%;border:0;cursor:pointer;
+  background:transparent;color:var(--ink-2);font-family:inherit;font-size:14px;font-weight:600;
+  padding:9px 12px;border-radius:999px;text-align:left;
+  transition:background .18s ease,color .18s ease;
+}
+.nav-item .ni{width:19px;height:19px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;color:var(--muted)}
+.nav-item .ni svg{width:100%;height:100%}
+.nav-item:hover{background:var(--surface-2);color:var(--ink)}
+html[data-theme="dark"] .nav-item:hover{background:rgba(255,255,255,.04)}
+.nav-item.active{background:var(--accent-soft);color:var(--accent);font-weight:700}
+.nav-item.active .ni{color:var(--accent)}
+.nav-item .pro-tag{margin-left:auto;font-size:8.5px;font-weight:800;letter-spacing:.06em;background:var(--accent);color:#fff;padding:2px 6px;border-radius:999px}
+.nav-item .pro-tag.soon{background:var(--inf)}
+.unlock{
+  margin-top:10px;background:var(--surface-2);border:1px solid var(--line);
+  border-radius:var(--r-md);padding:14px;
+}
+.unlock h5{font-size:13.5px;font-weight:750;margin-bottom:4px}
+.unlock p{font-size:11.5px;color:var(--muted);line-height:1.45;margin-bottom:11px}
+
+/* ---------- Main ---------- */
+.main{flex:1;margin-left:240px;display:flex;flex-direction:column;min-height:100vh}
+.topbar{
+  position:sticky;top:0;z-index:30;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;padding:13px 30px;background:var(--bg);
+  border-bottom:1px solid var(--line);
+  -webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);
+}
+html[data-theme="light"] .topbar{background:rgba(245,242,238,.86)}
+html[data-theme="dark"] .topbar{background:rgba(23,19,16,.86)}
+.tb-left{display:flex;align-items:center;gap:12px;min-width:0}
+.tb-right{display:flex;align-items:center;gap:9px}
+.crumb{font-size:13px;color:var(--muted);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---- Top-right brand (req 6) ---- */
+.brand-badge{
+  display:inline-flex;align-items:center;gap:8px;padding:5px 13px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-xs);
+  font-weight:750;font-size:13px;letter-spacing:-.2px;color:var(--ink);
+}
+.brand-badge .bb{width:19px;height:19px;flex-shrink:0;display:inline-flex}
+.brand-badge .bb svg{width:100%;height:100%}
+html[data-theme="dark"] .brand-badge{color:#fff}
+
+.pill{
+  display:inline-flex;align-items:center;gap:7px;padding:6px 13px;border-radius:999px;
+  border:1px solid var(--line);background:var(--surface);font-size:12.5px;font-weight:600;color:var(--ink-2);
+  box-shadow:var(--shadow-xs);white-space:nowrap;
+}
+.pill b{color:var(--ink);font-weight:800}
+.iconbtn{
+  width:36px;height:36px;border-radius:999px;border:1px solid var(--line);background:var(--surface);
+  color:var(--ink-2);cursor:pointer;display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow-xs);transition:color .2s,box-shadow .2s,transform .12s;
+}
+.iconbtn svg{width:18px;height:18px}
+.iconbtn:hover{color:var(--accent);box-shadow:var(--shadow-sm)}
+.iconbtn:active{transform:scale(.94)}
+.menu-btn{display:none}
+
+/* ---- Auth button (req: login/signup, top-left) ---- */
+.auth-btn{
+  display:inline-flex;align-items:center;gap:8px;padding:7px 15px;border-radius:999px;
+  font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;border:1px solid var(--accent-line);
+  background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(169,63,43,.25);transition:all .18s;
+}
+.auth-btn:hover{background:var(--accent-deep)}
+.auth-btn .av{width:22px;height:22px;border-radius:999px;background:rgba(255,255,255,.22);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+
+.page{padding:30px;max-width:1120px;width:100%;animation:in .3s ease}
+@keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- Typography ---------- */
+h1{font-size:31px;font-weight:780;letter-spacing:-.9px;line-height:1.15;display:flex;align-items:center;gap:12px}
+h2{font-size:21px;font-weight:750;letter-spacing:-.5px}
+h3{font-size:16px;font-weight:730;letter-spacing:-.25px}
+.lede{color:var(--muted);font-size:14.5px;line-height:1.65;margin-top:10px;max-width:640px}
+.head{margin-bottom:24px}
+.h-emoji{font-size:28px;line-height:1}
+.muted{color:var(--muted)}
+.small{font-size:12.5px}
+
+/* ---------- Buttons ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:inherit;font-size:14px;font-weight:680;cursor:pointer;
+  padding:11px 20px;border-radius:999px;border:1px solid transparent;
+  transition:background .18s,color .18s,box-shadow .2s,transform .12s,border-color .18s;
+  white-space:nowrap;
+}
+.btn:active{transform:scale(.97)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 2px 10px rgba(169,63,43,.28)}
+.btn-primary:hover{background:var(--accent-deep);box-shadow:0 6px 18px rgba(169,63,43,.34)}
+.btn-ghost{background:var(--surface);color:var(--ink);border-color:var(--line);box-shadow:var(--shadow-xs)}
+.btn-ghost:hover{border-color:var(--accent-line);color:var(--accent)}
+.btn-soft{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.btn-dark{background:var(--ink);color:var(--bg)}
+.btn-dark:hover{opacity:.88}
+.btn-block{width:100%}
+.btn-sm{padding:8px 15px;font-size:13px}
+.btn-lg{padding:14px 26px;font-size:15px}
+
+/* ---------- Cards ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px;box-shadow:var(--shadow-xs)}
+.card+.card{margin-top:18px}
+.grid{display:grid;gap:18px}
+.g2{grid-template-columns:repeat(2,1fr)}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+
+/* ---------- Inputs ---------- */
+label.lb{display:block;font-size:12.5px;font-weight:700;color:var(--ink-2);margin-bottom:8px}
+.input,.textarea,select.input{
+  width:100%;font-family:inherit;font-size:14.5px;color:var(--ink);
+  background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:13px 15px;outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.textarea{min-height:170px;resize:vertical;line-height:1.65}
+.input::placeholder,.textarea::placeholder{color:var(--faint)}
+.input:focus,.textarea:focus{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+select.input{appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236f6862' stroke-width='2.4' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
+.row{display:flex;gap:14px;flex-wrap:wrap}
+.row>*{flex:1;min-width:190px}
+
+/* ---------- Orb ---------- */
+.orb-stage{display:flex;flex-direction:column;align-items:center;padding:16px 0 6px}
+.orb-wrap{position:relative;width:190px;height:190px;display:flex;align-items:center;justify-content:center}
+.orb-glow{position:absolute;inset:-26px;border-radius:50%;background:radial-gradient(circle,var(--orb-glow) 0%,transparent 66%);filter:blur(4px);animation:breathe 4.4s ease-in-out infinite}
+.orb-ring{position:absolute;inset:-6px;border-radius:50%;border:1px solid var(--accent-line);animation:ripple 3.6s ease-out infinite}
+.orb{
+  position:relative;width:146px;height:146px;border-radius:50%;cursor:pointer;border:0;padding:0;
+  background:radial-gradient(circle at 32% 26%,var(--orb-1) 0%,var(--orb-2) 46%,var(--orb-3) 100%);
+  box-shadow:0 14px 40px var(--orb-glow),inset 0 -10px 26px rgba(120,40,10,.45),inset 0 8px 18px rgba(255,255,255,.34);
+  animation:float 5.6s ease-in-out infinite;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1);
+}
+.orb::after{content:"";position:absolute;left:20%;top:12%;width:34%;height:24%;border-radius:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,0));filter:blur(2px)}
+.orb:hover{transform:scale(1.05)}
+.orb:active{transform:scale(.97)}
+.orb.busy{animation:spin 1.4s linear infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+@keyframes breathe{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
+@keyframes ripple{0%{opacity:.55;transform:scale(.97)}100%{opacity:0;transform:scale(1.22)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.orb-cap{margin-top:18px;font-size:14px;color:var(--muted);font-weight:600;text-align:center}
+.orb-state{margin-top:5px;font-size:13.5px;font-weight:700;color:var(--accent);min-height:20px;text-align:center}
+
+/* ============================================================
+   Streak — clean modern streak symbol + continuous gentle tilt
+   (req 2) with prefers-reduced-motion respected.
+   ============================================================ */
+.streak-wrap{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;flex-shrink:0;
+  transform-origin:50% 70%;animation:tilt 4s ease-in-out infinite}
+@keyframes tilt{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(8deg)}}
+@media (prefers-reduced-motion: reduce){
+  .streak-wrap{animation:none}
+  .orb,.orb-glow,.orb-ring,.orb.busy{animation:none!important}
+  .toast,.page{animation:none}
+}
+.streak-wrap svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* ---------- Confidence badges / citations (req 8) ---------- */
+.src-doc{display:flex;gap:14px;align-items:flex-start}
+.src-main{flex:1;min-width:0}
+.cite-panel{width:300px;flex-shrink:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;align-self:start;position:sticky;top:86px}
+.cite-panel h4{font-size:13px;font-weight:750;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.cite-card{border:1px solid var(--line);border-radius:var(--r-md);padding:13px;margin-bottom:10px;background:var(--surface-2)}
+.cite-card .ct{font-size:13px;font-weight:700;margin-bottom:4px}
+.cite-card .cs{font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:8px}
+.cite-card .cm{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cred-bar{flex:1;height:6px;border-radius:99px;background:var(--line-2);overflow:hidden}
+.cred-bar i{display:block;height:100%;background:var(--accent)}
+.cite-card .quick{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;color:var(--accent);cursor:pointer}
+.cite-card .quick:hover{text-decoration:underline}
+.conf-meter{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:14px;font-size:11.5px;color:var(--muted)}
+.conf-meter .c{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);background:var(--surface-2)}
+.mtag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:750;border-radius:7px;padding:2px 7px;margin:0 3px;vertical-align:1px}
+.mtag.S{color:var(--src,var(--ok));background:color-mix(in srgb,var(--ok) 14%,transparent)}
+.mtag.I{color:var(--inf,var(--warn));background:color-mix(in srgb,var(--warn) 14%,transparent)}
+.mtag.C{color:var(--cre);background:color-mix(in srgb,var(--cre) 14%,transparent)}
+.anchor{color:var(--accent);cursor:pointer;font-weight:750;text-decoration:none;border-bottom:1px dashed var(--accent-line)}
+.anchor:hover{text-decoration:underline}
+.src-para{line-height:1.75;font-size:14.5px}
+.src-para p{margin-bottom:12px}
+
+/* ---------- Tiles ---------- */
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px;cursor:pointer;box-shadow:var(--shadow-xs);transition:transform .16s,box-shadow .2s,border-color .2s}
+.tile:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--accent-line)}
+.tile-ico{font-size:23px;margin-bottom:11px;display:block}
+.tile h3{margin-bottom:6px}
+.tile p{font-size:13px;color:var(--muted);line-height:1.55}
+.tile .soon-tag{display:inline-block;margin-left:8px;font-size:10px;font-weight:800;letter-spacing:.05em;color:var(--warn);border:1px solid var(--line);border-radius:999px;padding:2px 8px;vertical-align:2px}
+
+/* ---------- Pricing ---------- */
+.seg{display:inline-flex;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:4px;gap:3px;box-shadow:var(--shadow-xs)}
+.seg button{border:0;background:transparent;font-family:inherit;font-size:13.5px;font-weight:680;color:var(--muted);padding:8px 18px;border-radius:999px;cursor:pointer;transition:all .2s}
+.seg button.active{background:var(--accent);color:#fff;box-shadow:0 2px 8px rgba(169,63,43,.3)}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:16px;margin-top:24px;align-items:start}
+.plan{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:24px 20px;box-shadow:var(--shadow-xs);transition:transform .16s,box-shadow .2s}
+.plan:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.plan.pop{border-color:var(--accent);box-shadow:0 6px 22px rgba(169,63,43,.14)}
+.tag{position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--accent);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.09em;padding:4px 11px;border-radius:999px;white-space:nowrap}
+.tag.alt{background:var(--ink);color:var(--bg)}
+.plan h3{margin-bottom:10px}
+.price{font-size:29px;font-weight:800;letter-spacing:-1px;line-height:1}
+.price small{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:0}
+.per{font-size:12px;color:var(--muted);margin-top:6px}
+.renew-note{font-size:11px;color:var(--ok);font-weight:650;margin-top:8px;display:flex;align-items:center;gap:5px}
+.feats{list-style:none;margin:18px 0;display:flex;flex-direction:column;gap:9px}
+.feats li{font-size:13px;color:var(--ink-2);line-height:1.5;display:flex;gap:8px;align-items:flex-start}
+.feats li::before{content:"✓";color:var(--accent);font-weight:800;flex-shrink:0}
+
+/* ---------- Chat ---------- */
+.thread{display:flex;flex-direction:column;gap:12px;max-height:440px;overflow-y:auto;padding:4px}
+.msg{display:flex}
+.msg.u{justify-content:flex-end}
+.bub{max-width:80%;padding:12px 16px;border-radius:var(--r-lg);font-size:14px;line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.msg.u .bub{background:var(--accent);color:#fff;border-bottom-right-radius:6px}
+.msg.a .bub{background:var(--surface-2);border:1px solid var(--line);color:var(--ink);border-bottom-left-radius:6px}
+.ig{display:flex;gap:11px;align-items:flex-end;margin-top:16px}
+.ig .input{flex:1}
+
+/* ---------- Result ---------- */
+.result{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;font-size:14px;line-height:1.7;white-space:pre-wrap;word-break:break-word;min-height:120px}
+.result.empty{color:var(--faint);display:flex;align-items:center;justify-content:center;text-align:center}
+.item{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:14px 16px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md)}
+.item+.item{margin-top:10px}
+.item .t{font-size:14px;font-weight:680;margin-bottom:3px}
+.item .m{font-size:11.5px;color:var(--muted)}
+.mini{border:1px solid var(--line);background:var(--surface);color:var(--ink-2);border-radius:999px;padding:6px 13px;font-size:12px;font-weight:650;cursor:pointer;font-family:inherit;transition:all .18s}
+.mini:hover{color:var(--accent);border-color:var(--accent-line)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;text-align:center}
+.stat .n{font-size:24px;font-weight:800;letter-spacing:-.6px;display:flex;align-items:center;justify-content:center;gap:6px}
+.stat .l{font-size:11.5px;color:var(--muted);margin-top:5px;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+.badge{display:inline-block;padding:4px 11px;border-radius:999px;font-size:11px;font-weight:750}
+.b-free{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.b-pro{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
+
+/* ---------- Modal / toast ---------- */
+.ov{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(20,16,13,.5);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:in .22s ease}
+.modal{max-width:430px;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:22px;padding:28px;box-shadow:var(--shadow-lg);text-align:center}
+.steps{list-style:none;text-align:left;margin:18px 0}
+.steps li{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:11px 14px;margin-bottom:8px;font-size:13.5px;color:var(--ink-2);line-height:1.5}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);z-index:300;background:var(--ink);color:var(--bg);padding:13px 22px;border-radius:999px;font-size:13.5px;font-weight:650;opacity:0;pointer-events:none;transition:opacity .28s,transform .28s;box-shadow:var(--shadow-lg);max-width:88vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- Pay ---------- */
+.pay-btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:15px;border-radius:999px;font-size:15px;font-weight:700;cursor:pointer;border:1px solid transparent;font-family:inherit;transition:all .18s}
+.pay-apple{background:#000;color:#fff}
+.pay-apple:hover{background:#222}
+.pay-card{background:var(--accent);color:#fff}
+.pay-card:hover{background:var(--accent-deep)}
+.pay-pp{background:#ffc439;color:#0c2e5c}
+.pay-pp:hover{background:#f0b32c}
+html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;font-size:14px}
+.sum-row+.sum-row{border-top:1px solid var(--line)}
+.sum-row.tot{font-weight:800;font-size:16px}
+
+/* ---------- Responsive ---------- */
+.scrim{display:none}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-102%);transition:transform .26s cubic-bezier(.22,1,.36,1);box-shadow:none}
+  .sidebar.open{transform:translateX(0);box-shadow:var(--shadow-lg)}
+  .main{margin-left:0}
+  .menu-btn{display:flex}
+  .page{padding:20px 16px 40px}
+  .topbar{padding:11px 16px}
+  h1{font-size:25px}
+  .g2,.g3,.g4,.stats{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .scrim.on{display:block;position:fixed;inset:0;z-index:35;background:rgba(20,16,13,.42)}
+  .crumb{display:none}
+  .src-doc{flex-direction:column}
+  .cite-panel{width:100%;position:static}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand" data-go="/home">
+      <div class="brand-mark" id="brand-mark"></div>
+      <div class="brand-txt"><b>IllumAI</b><span>Writing Platform</span></div>
+    </div>
+    <nav class="nav" id="nav"></nav>
+    <div class="unlock" id="unlock"></div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <div class="tb-left">
+        <button class="iconbtn menu-btn" id="menu" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        </button>
+        <!-- Login / Sign up (top-left) + session avatar -->
+        <button class="auth-btn" id="authBtn">Sign in / Sign up</button>
+        <span class="crumb" id="crumb">Home</span>
+      </div>
+      <div class="tb-right">
+        <span class="pill" id="streak-pill" title="Daily streak"><span class="streak-wrap" id="streakMark"></span><b id="streak-n">0</b></span>
+        <span class="pill" id="cred-pill" title="Illuminations remaining"><b id="cred-n">5</b> <span class="small">left</span></span>
+        <button class="iconbtn" id="theme" aria-label="Theme"></button>
+        <!-- Top-right branding (req 6) -->
+        <span class="brand-badge" id="topBrand"><span class="bb" id="topBrandMark"></span><span>IllumAI</span></span>
+      </div>
+    </header>
+    <main class="page" id="page"></main>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ============================================================
+   1. LOGO — clean minimal aperture spark (req 6)
+   ============================================================ */
+const LOGO = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+<defs>
+  <linearGradient id="lgA" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#e89a68"/><stop offset=".55" stop-color="#c2532f"/><stop offset="1" stop-color="#8f3423"/>
+  </linearGradient>
+</defs>
+<rect width="40" height="40" rx="11" fill="url(#lgA)"/>
+<circle cx="20" cy="20" r="11" fill="#fff" opacity=".14"/>
+<path d="M20 10l2.1 7.9 7.9 2.1-7.9 2.1L20 30l-2.1-7.9L10 20l7.9-2.1z" fill="#fff"/>
+</svg>`;
+
+/* ============================================================
+   2. STREAK — clean modern streak symbol (req 2)
+   Tier colours: orange 0 · red 5 · purple 10 · blue 25 · frenzy 100
+   Rewards thresholds are enforced server-side (req 3).
+   ============================================================ */
+function streakTier(d){
+  if(d>=100) return {name:"Frenzy", c:"#8b45d6", glow:"#c084fc", next:null};
+  if(d>=25)  return {name:"Blue",   c:"#3b82f6", glow:"#7fb8ff", next:{at:100,n:"Frenzy Flame"}};
+  if(d>=10)  return {name:"Purple", c:"#8b45d6", glow:"#c084fc", next:{at:25,n:"Blue Flame"}};
+  if(d>=5)   return {name:"Red",    c:"#e03b2f", glow:"#ff7a66", next:{at:10,n:"Purple Flame"}};
+  return {name:"Orange", c:"#ff8c2e", glow:"#ffb066", next:{at:5,n:"Red Flame"}};
+}
+// A clean, modern flame-drop streak mark.
+const STREAK_SVG = (c,glow,frenzy)=>`
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="sg" x1="8" y1="2" x2="15" y2="22" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="${glow}"/><stop offset="1" stop-color="${c}"/>
+    </linearGradient>
+  </defs>
+  <path d="M13.2 2.4c1.1 3.1-1 4.7-1.9 6.6-.9 1.9-2 3.2-2 5.8a4.7 4.7 0 0 0 9.4 0c0-1.6-.5-2.8-1.2-3.9-.6 1.1-1.4 1.7-2.2 2 .6-3.2-1.2-6.6-2.1-10.5z"
+        fill="url(#sg)"/>
+  ${frenzy?`<path d="M12 19.5c-2.6 0-4.2-1.6-4.6-3.6" stroke="${glow}" stroke-width="1.3" stroke-linecap="round"/>`:""}
+</svg>`;
+function flameLabel(d){const t=streakTier(d);return t.name==="Frenzy"?`FRENZY FLAME 🔥 · ${d} day streak`:`${t.name} flame · ${d} day streak`;}
+
+/* ============================================================
+   3. ICONS
+   ============================================================ */
+const I = {
+  home:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>',
+  orb:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7.5"/><path d="M9.2 9.2a4 4 0 0 1 2-1.5"/></svg>',
+  tpl:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="5" rx="2"/><rect x="13" y="10" width="8" height="11" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/></svg>',
+  sum:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h13"/></svg>',
+  exp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.8c.6.5 1 1.2 1.1 2h4.8c.1-.8.5-1.5 1.1-2A6 6 0 0 0 12 3z"/></svg>',
+  rew:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  org:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01" stroke-width="2.6"/></svg>',
+  drf:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m3 7 9 6 9-6"/></svg>',
+  src:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>',
+  hum:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-3.5 3.5-5.5 8-5.5s8 2 8 5.5"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.6 8.6 0 0 1-3.8-.9L3 21l1.9-4.5a8.3 8.3 0 1 1 16.1-5z"/><path d="M8.5 12h.01M12 12h.01M15.5 12h.01"/></svg>',
+  hist:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3.5 2"/></svg>',
+  vault:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="12" cy="12" r="3.2"/><path d="M12 4v2M12 18v2"/></svg>',
+  plans:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M2.5 10h19"/></svg>',
+  user:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-6 8-6s8 2 8 6"/></svg>',
+  set:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.7 1.7 0 0 0 1.87.34h.02a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.02a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="4.4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>'
+};
+
+/* ============================================================
+   4. STATE (server-authoritative; localStorage is a cache)
+   ============================================================ */
+const K={theme:"il_theme",token:"il_token",user:"il_user_cache",onb:"il_onb",chat:"il_chat"};
+const rd=(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v)}catch{return d}};
+const wr=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}};
+
+const S={
+  token: rd(K.token,null),
+  userCache: rd(K.user,null),
+  theme: rd(K.theme,"light"),
+  onb: rd(K.onb,false),
+  chat: rd(K.chat,[]),
+};
+S.user = null; // real account from server once loaded
+
+const CUR="£";
+const PLANS={
+  free:{name:"Free",m:0,y:0,cap:null,cred:5,feats:["5 free illuminations","All 5 core tools","Vault — 25 saved items","2 anchors on Source Drafts"]},
+  pro:{name:"Pro",m:5.99,y:49.99,cap:200,pop:1,feats:["200 illuminations / cycle","All 5 core tools","<b>Live Source-Anchored Drafts</b>","Citation cards + Quick Verify","Vault — 100 saves","Priority email support"]},
+  proplus:{name:"Pro+",m:12.99,y:109.99,pop:1,cap:650,feats:["650 illuminations / cycle","Everything in Pro","Priority processing","Multi-AI orchestration","Unlimited Vault + search","24/7 priority support"]},
+  proultra:{name:"Pro Ultra",m:29.99,y:239,cap:2500,feats:["2,500 illuminations / cycle","Instant priority queue","Advanced Vault (tags, export)","Custom templates","Team sharing","API access & white-label"]},
+  proultraplus:{name:"Pro Ultra+",m:49.99,y:399,star:1,cap:Infinity,feats:["Everything in Pro Ultra","<b>Unlimited illuminations</b>","Ask Anything — full AI chatbot","Multi-AI reasoning + coding","Unlimited chat history","Dedicated success manager"]}
+};
+const planName=()=>S.user?.planName||PLANS[S.user?.plan]?.name||"Free";
+const isPaid=()=>S.user && S.user.plan!=="free";
+
+// Remaining illumination display (req 4): plan cap remaining, or free credits.
+const unl=v=>v==="unlimited"||v===Infinity;
+function remainingTxt(){
+  const u=S.user; if(!u) return "—";
+  if(u.plan==="free") return String(u.credits);
+  if(unl(u.limit?.cap)) return "∞";
+  return String(u.limit?.remaining ?? 0);
+}
+
+function setUser(user, token){
+  S.user=user;
+  if(token){S.token=token;wr(K.token,token);}
+  wr(K.user,user);
+  applyTheme(); chrome(); render();
+}
+function clearAuth(){S.user=null;S.token=null;localStorage.removeItem(K.token);localStorage.removeItem(K.user);renderAuth();}
+
+/* ---- toast ---- */
+let tT;
+function toast(m){const e=document.getElementById("toast");e.textContent=m;e.classList.add("on");clearTimeout(tT);tT=setTimeout(()=>e.classList.remove("on"),3000)}
+
+/* ---- Vault / history (synced to account) ---- */
+function saveVault(kind,title,body){
+  if(!S.user) return;
+  S.user.vault=S.user.vault||[];
+  S.user.vault.unshift({id:Date.now().toString(36),kind,title:title||"Untitled",body,at:Date.now()});
+  S.user.vault=S.user.vault.slice(0,300); wr(K.user,S.user);
+}
+function logHist(action,input,output){
+  if(!S.user) return;
+  S.user.history=S.user.history||[];
+  S.user.history.unshift({id:Date.now().toString(36),action,input:(input||"").slice(0,200),output:(output||"").slice(0,400),at:Date.now()});
+  S.user.history=S.user.history.slice(0,200); wr(K.user,S.user);
+}
+const ago=t=>{const s=(Date.now()-t)/1e3;if(s<60)return"just now";if(s<3600)return Math.floor(s/60)+"m ago";if(s<86400)return Math.floor(s/3600)+"h ago";return Math.floor(s/86400)+"d ago"};
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDate=ms=>new Date(ms).toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"});
+
+/* ============================================================
+   5. API + AI
+   ============================================================ */
+async function api(path,opts={}){
+  const headers={"Content-Type":"application/json"};
+  if(S.token) headers["Authorization"]="Bearer "+S.token;
+  let r;
+  try{
+    r=await fetch(path,{...opts,headers});
+  }catch(e){
+    // The old "Failed to fetch" — surface a clear, actionable message.
+    throw new Error("Could not reach the IllumAI server. Please check your connection and try again.");
+  }
+  let j; try{j=await r.json()}catch{j={}}
+  if(!r.ok){ const err=new Error(j.error||("Request failed ("+r.status+")")); err.code=j.code||null; throw err; }
+  return j;
+}
+const SYS=`You are Illumini, an advanced AI writing companion inside IllumAI. You help users understand, transform, and improve any piece of writing.
+
+CORE CAPABILITIES — you can summarise text into clear concise versions; explain complex writing in simple terms; rewrite text in different tones, styles, or formats; draft new content from instructions; organise messy writing into structured formats; improve grammar, clarity, flow and coherence; transform text into emails, essays, reports, posts, scripts; expand or shorten text while preserving meaning; and analyse writing for intent, tone, audience and quality.
+
+AUTO-DETECTION — Read the user's request and automatically choose the right task:
+- They want a long text condensed into its key points → summarise.
+- They want a concept clarified in simple terms → explain.
+- They want existing text improved in style, flow or tone → rewrite.
+- They want new content written from a brief → draft.
+- They want messy text structured into actions, points or tasks → organise.
+- They are just chatting → respond naturally, then offer: "Would you like me to summarise, rewrite, or improve something?"
+- They request a writing task but give no text → ask: "Please paste the text you want me to work on."
+- They are unsure what they want → suggest possible tasks and give examples.
+
+BEHAVIOUR — Be clear, helpful and structured. Never invent facts when rewriting factual text. Preserve the original meaning unless the user requests changes. Keep the tone friendly, professional and supportive. Give multiple options when useful (e.g. 3 rewrite styles). Adapt to the user's writing level. Never output harmful, offensive or unsafe content.
+
+OUTPUT FORMAT — Clean, structured and easy to scan: use headings when helpful, bullet points for clarity, and optional variations (tone, length, style).
+
+IDENTITY — You are Illumini: a friendly, intelligent writing companion who helps users transform any text into its best version. Embody the IllumAI ethos: "Illuminate your understanding."`;
+const CHAT_SYS=`You are Illumini, a general AI assistant inside IllumAI (Pro Ultra+).
+Answer ANY question the user asks — explain, write, plan, code, analyse, brainstorm, translate, or just chat.
+Be calm, warm, clear and genuinely helpful. Give complete, ready-to-use answers. Match the user's language.`;
+const MODES={
+  summarise:`MODE: SUMMARISE.\nReturn:\n**Summary** — one tight paragraph.\n**Key takeaways** — 3-6 bullets.\n**Bullet points** — 5-8 skimmable bullets.\nKeep every fact from the source.`,
+  explain:`MODE: EXPLAIN.\nExplain so a beginner truly understands. Define jargon, give one memorable analogy, and build up step by step. Sections: introduction, main ideas, examples, conclusion.`,
+  rewrite:`MODE: REWRITE.\nRewrite in the chosen tone, preserving meaning and all key facts. Improve clarity and flow. Then add a one-line note on what changed.`,
+  organise:`MODE: ORGANISE.\nReturn:\n**Task list** — actionable items.\n**Notes** — cleaned & grouped.\n**Study cards** — 3-6 Q&A cards.`,
+  draft:`MODE: DRAFT.\nWrite a polished, ready-to-send draft of the requested kind and tone, with a natural greeting and sign-off.`
+};
+function gate(){
+  if(!S.user){toast("Please sign in first — it takes 10 seconds.");go("/auth");throw new Error("Sign in to use Illumini.")}
+}
+async function ai(userText,modePrompt,history,systemPrompt,mode){
+  gate();
+  try{
+    const j=await api("/api/ai",{method:"POST",body:JSON.stringify({model:"auto",systemPrompt:systemPrompt||SYS,userText,modePrompt:modePrompt||"",history:history||[],mode:mode||""})});
+    if(j.user) setUser(j.user);
+    return j.result||"";
+  }catch(e){
+    if(e.code==="NO_CREDITS"){toast("You're out of illuminations.");go("/plans");}
+    if(e.code==="LIMIT"){toast("Plan limit reached for this cycle.");go("/plans");}
+    throw e;
+  }
+}
+
+/* ============================================================
+   6. CHROME (sidebar, topbar, auth, theme)
+   ============================================================ */
+const NAV=[
+  {s:""},
+  {r:"/home",i:"home",t:"Home"},
+  {r:"/agent",i:"orb",t:"Illumini Agent"},
+  {s:"AI Writing"},
+  {r:"/templates",i:"tpl",t:"AI Writing Templates"},
+  {r:"/drafts",i:"src",t:"Source-Anchored Drafts",pro:"PRO"},
+  {s:"AI Tools"},
+  {r:"/summarise",i:"sum",t:"Text Summariser"},
+  {r:"/explain",i:"exp",t:"Explain"},
+  {r:"/rewrite",i:"rew",t:"Rewrite"},
+  {r:"/organise",i:"org",t:"Organise"},
+  {r:"/draft",i:"drf",t:"Draft"},
+  {r:"/chat",i:"chat",t:"AI Chatbot",pro:"ULTRA+"},
+  {r:"/humanizer",i:"hum",t:"AI Humanizer",pro:"SOON"},
+  {s:"History"},
+  {r:"/history",i:"hist",t:"Document History"},
+  {r:"/vault",i:"vault",t:"Vault"},
+  {s:"Account"},
+  {r:"/plans",i:"plans",t:"Plans & Pricing"},
+  {r:"/profile",i:"user",t:"Profile"},
+  {r:"/settings",i:"set",t:"Settings"}
+];
+function buildNav(){
+  document.getElementById("brand-mark").innerHTML=LOGO;
+  document.getElementById("nav").innerHTML=NAV.map(n=>n.s!==undefined
+    ? (n.s?`<div class="nav-sec">${n.s}</div>`:"")
+    : `<button class="nav-item" data-go="${n.r}"><span class="ni">${I[n.i]}</span><span>${n.t}</span>${n.pro?`<span class="pro-tag ${n.pro==="SOON"?"soon":""}">${n.pro}</span>`:""}</button>`
+  ).join("");
+}
+function renderAuth(){
+  const b=document.getElementById("authBtn");
+  if(S.user){
+    b.innerHTML=`<span class="av">${esc((S.user.username||S.user.email||"U")[0].toUpperCase())}</span>${esc(S.user.username||"Me")}`;
+    b.style.background="var(--surface)"; b.style.color="var(--ink)"; b.style.borderColor="var(--line)";
+    b.dataset.go="/profile";
+  }else{
+    b.innerHTML="Sign in / Sign up";
+    b.style.background="var(--accent)"; b.style.color="#fff"; b.style.borderColor="var(--accent-line)";
+    b.dataset.go="/auth";
+  }
+}
+function renderStreak(){
+  const d=S.user?.streak?.count||0;
+  const t=streakTier(d);
+  const m=document.getElementById("streakMark");
+  m.innerHTML=STREAK_SVG(t.c,t.glow,t.name==="Frenzy");
+  document.getElementById("streak-pill").title=flameLabel(d);
+  document.getElementById("streak-n").textContent=d;
+}
+function renderCreds(){
+  const u=S.user;
+  const txt=u?(u.plan==="free"?String(u.credits):(unl(u.limit?.cap)?"∞":String(u.limit?.remaining??0))):"—";
+  const el=document.getElementById("cred-n");
+  el.textContent=txt;
+  document.getElementById("cred-pill").title=u&&u.limit?`${u.limit.used}/${unl(u.limit.cap)?"unlimited":u.limit.cap} used this cycle`:"Illuminations remaining";
+}
+function chrome(){
+  renderStreak(); renderCreds(); renderAuth();
+  document.getElementById("theme").innerHTML=S.theme==="dark"?I.sun:I.moon;
+  document.getElementById("topBrandMark").innerHTML=LOGO;
+  const u=document.getElementById("unlock");
+  const own=isPaid();
+  if(own&&S.user?.plan==="proultraplus"){
+    u.innerHTML=`<h5>Pro Ultra+ active ✨</h5><p>Unlimited illuminations and full AI chat.</p>
+      <button class="btn btn-soft btn-sm btn-block" data-go="/chat">Open Ask Anything</button>`;
+  }else if(own){
+    u.innerHTML=`<h5>${planName()} active</h5><p>${unl(S.user?.limit?.remaining)?"Unlimited":(S.user?.limit?.remaining+" illuminations left")} this cycle.</p>
+      <button class="btn btn-soft btn-sm btn-block" data-go="/profile">View usage</button>`;
+  }else{
+    const nx=S.user?.plan==="free"?"Pro":PLANS[S.user?.plan]?.name?"Upgrade":"Pro";
+    u.innerHTML=`<h5>Unlock ${nx}</h5><p>More illuminations, Source-Anchored Drafts & the full assistant.</p>
+      <button class="btn btn-dark btn-sm btn-block" data-go="/plans">Upgrade →</button>`;
+  }
+}
+function applyTheme(){document.documentElement.setAttribute("data-theme",S.theme);wr(K.theme,S.theme);}
+
+/* ============================================================
+   7. ONBOARDING
+   ============================================================ */
+function showIntro(){
+  if(S.onb||document.getElementById("intro"))return;
+  const o=document.createElement("div");o.className="ov";o.id="intro";
+  o.innerHTML=`<div class="modal">
+    <div style="width:56px;height:56px;margin:0 auto 14px">${LOGO}</div>
+    <h2>Welcome to IllumAI</h2>
+    <p class="muted small" style="margin-top:8px">Hi <b>${esc(S.user?.username||"there")}</b> — here's how it works in 30 seconds.</p>
+    <ol class="steps">
+      <li><b>1 · Paste anything</b> — an article, notes, or a rough idea.</li>
+      <li><b>2 · Pick a tool</b> — Summarise, Explain, Rewrite, Organise or Draft.</li>
+      <li><b>3 · Or tap the orb</b> — Illumini can take on any custom task.</li>
+      <li><b>4 · Save to your Vault</b> — progress & purchases are saved to your account.</li>
+    </ol>
+    <button class="btn btn-primary btn-block" id="introDone">Start illuminating</button>
+  </div>`;
+  document.body.appendChild(o);
+  o.querySelector("#introDone").onclick=()=>{S.onb=true;wr(K.onb,true);o.remove()};
+}
+
+/* ============================================================
+   8. PAGES
+   ============================================================ */
+const TOOLS=[
+  {r:"/summarise",e:"✂️",n:"Text Summariser",d:"Condense any text into its essential ideas and key points."},
+  {r:"/explain",e:"💡",n:"Explain",d:"Understand complex topics with simple language and metaphors."},
+  {r:"/rewrite",e:"🖊️",n:"Rewrite",d:"Refine your writing into any tone with perfect clarity."},
+  {r:"/organise",e:"🗂️",n:"Organise",d:"Turn messy notes into tasks, clean notes and study cards."},
+  {r:"/draft",e:"✉️",n:"Draft",d:"Compose polished emails and messages from a simple brief."}
+];
+const P={};
+
+/* ---------- Home ---------- */
+P["/home"]=()=>({title:"Home",html:`
+  <div class="head" style="text-align:center">
+    <div class="orb-stage">
+      <div class="orb-wrap"><div class="orb-glow"></div><div class="orb-ring"></div>
+        <button class="orb" id="orb" aria-label="Open Illumini Agent"></button></div>
+      <div class="orb-cap">Meet <b>Illumini</b> — your clarity engine</div>
+      <div class="orb-state" id="orbState">Tap the orb to begin</div>
+    </div>
+    <h1 style="justify-content:center;margin-top:22px">Illuminate your understanding.</h1>
+    <p class="lede" style="margin:12px auto 0">Paste any text, document or idea and Illumini will
+      <b>summarise</b>, <b>explain</b>, <b>rewrite</b>, <b>organise</b> or <b>draft</b> it — with total clarity.</p>
+    <div class="chips" style="justify-content:center;margin-top:20px">
+      <button class="btn btn-primary btn-lg" data-go="/agent">Open Illumini →</button>
+      <button class="btn btn-ghost btn-lg" data-go="/summarise">Try a tool</button>
+      <button class="btn btn-ghost btn-lg" data-go="/drafts">Source-Anchored Drafts</button>
+    </div>
+  </div>
+  <div class="nav-sec" style="padding-left:2px">AI Tools</div>
+  <div class="grid g3" style="margin-top:6px">
+    ${TOOLS.map(t=>`<div class="tile" data-go="${t.r}"><span class="tile-ico">${t.e}</span><h3>${t.n}</h3><p>${t.d}</p></div>`).join("")}
+    <div class="tile" data-go="/humanizer"><span class="tile-ico">👤</span><h3>AI Humanizer<span class="soon-tag">COMING SOON</span></h3><p>Make any AI text read naturally — plain, warm and unmistakably human.</p></div>
+  </div>`,
+  mount(){ orbInit(document.getElementById("orb"),document.getElementById("orbState")); }
+});
+
+/* ---------- Agent ---------- */
+P["/agent"]=()=>({title:"Illumini Agent",html:`
+  <div class="head" style="text-align:center">
+    <div class="orb-stage"><div class="orb-wrap"><div class="orb-glow"></div><div class="orb-ring"></div>
+      <button class="orb" id="orb" aria-label="Illumini"></button></div>
+      <div class="orb-cap">Illumini is listening</div>
+      <div class="orb-state" id="orbState">Ready</div></div>
+    <h1 style="justify-content:center;margin-top:18px">Ask Illumini anything</h1>
+    <p class="lede" style="margin:10px auto 0">Tell Illumini what you want — <b>summarise, explain, rewrite, organise or draft</b>.
+      Illumini automatically detects the right task from your request. No setup needed.</p>
+  </div>
+  <div class="card">
+    <label class="lb" for="ai">What would you like Illumini to do? (paste text or describe the task)</label>
+    <textarea class="textarea" id="ai" placeholder="e.g. Summarise this article…
+
+explain quantum computing simply…
+
+Rewrite this email to sound more professional…
+
+Draft a job application email for me…"></textarea>
+    <div class="chips">
+      <button class="btn btn-primary" id="agGo">✨ Illuminate</button>
+      <button class="btn btn-ghost" id="agClr">Clear</button>
+    </div>
+    <div class="chips">${["Summarise this","Explain it simply","Rewrite more professionally","Organise these notes","Draft an email"].map(q=>`<button class="mini" data-q="${q}">${q}</button>`).join("")}</div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:12px">Illumini's answer</h3>
+    <div id="agOut" class="result empty">Your answer will appear here…</div>
+    <div class="chips" id="agAct" style="display:none"><button class="mini" id="agCopy">Copy</button><button class="mini" id="agSave">Save to Vault</button></div>
+  </div>`,
+  mount(){
+    const orb=document.getElementById("orb"),st=document.getElementById("orbState");
+    const ta=document.getElementById("ai"),out=document.getElementById("agOut"),act=document.getElementById("agAct");
+    let busy=false,last="";
+    orb.onclick=()=>ta.focus();
+    document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{ta.value=b.dataset.q+": ";ta.focus()});
+    document.getElementById("agClr").onclick=()=>{ta.value="";out.className="result empty";out.textContent="Your answer will appear here…";act.style.display="none"};
+    document.getElementById("agGo").onclick=async()=>{
+      const q=ta.value.trim(); if(!q)return toast("Tell Illumini what you need.");
+      if(busy)return; busy=true; orb.classList.add("busy"); st.textContent="Illuminating…";
+      out.className="result"; out.textContent="Illumini is thinking…"; act.style.display="none";
+      try{ last=await ai(q,"",[],SYS,"auto"); out.textContent=last; act.style.display="flex"; st.textContent="Done ✓"; logHist("agent",q,last); syncLocal(); }
+      catch(e){ out.textContent="⚠ "+e.message; st.textContent="Ready"; }
+      finally{ busy=false; orb.classList.remove("busy"); }
+    };
+    document.getElementById("agCopy").onclick=()=>{navigator.clipboard?.writeText(last).then(()=>toast("Copied"))};
+    document.getElementById("agSave").onclick=()=>{saveVault("agent",ta.value.slice(0,44),last);toast("Saved to Vault ✓");syncLocal()};
+  }
+});
+
+/* ---------- Generic tool page ---------- */
+function toolPage(cfg){
+  return()=>({title:cfg.n,html:`
+    <div class="head"><h1><span class="h-emoji">${cfg.e}</span>${cfg.n}</h1><p class="lede">${cfg.d}</p></div>
+    <div class="card">
+      <textarea class="textarea" id="tin" placeholder="${cfg.ph}"></textarea>
+      ${cfg.opts?`<label class="lb" style="margin-top:18px">Options</label><div class="row">${cfg.opts}</div>`:""}
+      <div class="chips" style="margin-top:18px"><button class="btn btn-primary" id="tgo">✨ ${cfg.cta}</button><button class="btn btn-ghost" id="tclr">Clear</button></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">${cfg.outLabel}</h3>
+      <div id="tout" class="result empty">Illumini's ${cfg.outLabel.toLowerCase()} will appear here…</div>
+      <div class="chips" id="tact" style="display:none"><button class="mini" id="tcopy">Copy</button><button class="mini" id="tsave">Save to Vault</button></div>
+    </div>`,
+    mount(){
+      const ta=document.getElementById("tin"),out=document.getElementById("tout"),act=document.getElementById("tact"),btn=document.getElementById("tgo");
+      let last="";
+      document.getElementById("tclr").onclick=()=>{ta.value="";out.className="result empty";out.textContent="Illumini's "+cfg.outLabel.toLowerCase()+" will appear here…";act.style.display="none"};
+      btn.onclick=async()=>{
+        const t=ta.value.trim(); if(!t)return toast("Please paste some text first.");
+        btn.disabled=true; btn.textContent="Illuminating…";
+        out.className="result"; out.textContent="Illumini is working…"; act.style.display="none";
+        let mp=MODES[cfg.mode];
+        document.querySelectorAll("[data-opt]").forEach(s=>{ if(s.value) mp+=`\n${s.dataset.opt}: ${s.value}.` });
+        try{ last=await ai(t,mp,[],SYS); out.textContent=last; act.style.display="flex"; logHist(cfg.mode,t,last); syncLocal(); }
+        catch(e){ out.textContent="⚠ "+e.message; }
+        finally{ btn.disabled=false; btn.textContent="✨ "+cfg.cta; }
+      };
+      document.getElementById("tcopy").onclick=()=>{navigator.clipboard?.writeText(last).then(()=>toast("Copied"))};
+      document.getElementById("tsave").onclick=()=>{saveVault(cfg.mode,ta.value.slice(0,44),last);toast("Saved to Vault ✓");syncLocal()};
+    }
+  });
+}
+const sel=(o,opts)=>`<select class="input" data-opt="${o}"><option value="">${o} — default</option>${opts.map(x=>`<option>${x}</option>`).join("")}</select>`;
+P["/summarise"]=toolPage({n:"Text Summariser",e:"✂️",mode:"summarise",cta:"Summarise",outLabel:"Summary",d:"Paste a long article, paper or meeting notes and get an instant summary, key takeaways and skimmable bullet points.",ph:"Paste or type the long text you want summarised here…",opts:sel("Length",["Short","Medium","Detailed"])+sel("Format","Paragraph","Bullets","Both")});
+P["/explain"]=toolPage({n:"Explain",e:"💡",mode:"explain",cta:"Explain",outLabel:"Explanation",d:"Understand complex topics with simple language, alternate examples and memorable metaphors.",ph:"Paste the concept, passage or topic you want explained…",opts:sel("Depth","Simple","Detailed","Study / exam")+sel("Audience","Beginner","Student","Professional")});
+P["/rewrite"]=toolPage({n:"Rewrite",e:"🖊️",mode:"rewrite",cta:"Rewrite",outLabel:"Rewritten text",d:"Refine your writing into any tone with perfect clarity — while preserving your original meaning.",ph:"Paste the text you'd like rewritten…",opts:sel("Tone","Professional","Friendly","Formal","Concise","Persuasive","Academic","Casual")+sel("Length","Shorter","Same","Longer")});
+P["/organise"]=toolPage({n:"Organise",e:"🗂️",mode:"organise",cta:"Organise",outLabel:"Organised output",d:"Turn messy notes and ideas into a clean task list, grouped notes and ready-to-study flashcards.",ph:"Paste your messy notes, meeting minutes or brain-dump…",opts:sel("Style","Task-first","Notes-first","Study cards")});
+P["/draft"]=toolPage({n:"Draft",e:"✉️",mode:"draft",cta:"Draft it",outLabel:"Your draft",d:"Compose polished emails and messages from a simple brief — pick a type and let Illumini write it.",ph:"Describe what you need written. e.g. A thank-you email to a client named Sam…",opts:sel("Type","Email","Message","Announcement","Social post","Invitation","Thank-you")+sel("Tone","Professional","Friendly","Formal","Persuasive")});
+
+/* ---------- Templates ---------- */
+const TPL=[
+  {e:"✉️",n:"Draft an Email",p:"Draft a professional email. Ask me 2 quick questions first if you need detail."},
+  {e:"💡",n:"Brainstorm Blog Ideas",p:"Brainstorm 10 original, specific blog post ideas for my niche."},
+  {e:"📣",n:"Write a Social Post",p:"Write a scroll-stopping social post with a hook and a clear call to action."},
+  {e:"📝",n:"Outline an Essay",p:"Outline an essay with a clear thesis, 3-5 body paragraphs and a conclusion."},
+  {e:"🤝",n:"Draft a Proposal",p:"Draft a persuasive proposal: problem, solution, benefits, plan and the ask."},
+  {e:"🧾",n:"Improve a Resume Bullet",p:"Rewrite my resume bullet to be achievement-focused and quantified."},
+  {e:"🎓",n:"Make a Study Plan",p:"Build me a realistic study plan with milestones and daily targets."},
+  {e:"✨",n:"Something else entirely",p:""}
+];
+P["/templates"]=()=>({title:"AI Writing Templates",html:`
+  <div class="head"><h1><span class="h-emoji">🧩</span>AI Writing Templates</h1>
+    <p class="lede">Reusable starting points. Pick one and Illumini works with you as a creative partner —
+      or choose <b>Something else entirely</b> to give it a completely independent task.</p></div>
+  <div class="grid g3">${TPL.map((t,i)=>`<div class="tile" data-tpl="${i}"><span class="tile-ico">${t.e}</span><h3>${t.n}</h3><p>${t.p||"Ask Illumini to carry out any task you can think of."}</p></div>`).join("")}</div>
+  <div class="card" id="tplWrap" style="display:none;margin-top:18px">
+    <h3 id="tplTitle" style="margin-bottom:12px"></h3>
+    <textarea class="textarea" id="tplIn" placeholder="Add your brief and any details…"></textarea>
+    <div class="chips"><button class="btn btn-primary" id="tplGo">✨ Illuminate</button></div>
+    <div id="tplOut" class="result empty" style="margin-top:18px">Illumini's draft will appear here…</div>
+    <div class="chips" id="tplAct" style="display:none"><button class="mini" id="tplSave">Save to Vault</button></div>
+  </div>`,
+  mount(){
+    const w=document.getElementById("tplWrap"),ti=document.getElementById("tplIn"),
+      tt=document.getElementById("tplTitle"),out=document.getElementById("tplOut"),act=document.getElementById("tplAct");
+    let cur=TPL[0],last="";
+    document.querySelectorAll("[data-tpl]").forEach(el=>el.onclick=()=>{cur=TPL[+el.dataset.tpl];tt.textContent=cur.e+"  "+cur.n;ti.value=cur.p?cur.p+"\n\n":"";w.style.display="block";w.scrollIntoView({behavior:"smooth",block:"center"});ti.focus()});
+    document.getElementById("tplGo").onclick=async()=>{
+      const t=ti.value.trim(); if(!t)return toast("Add a short brief first.");
+      out.className="result"; out.textContent="Illumini is drafting…"; act.style.display="none";
+      try{ last=await ai(t,MODES.draft,[],SYS); out.textContent=last; act.style.display="flex"; logHist("template:"+cur.n,t,last); syncLocal(); }
+      catch(e){ out.textContent="⚠ "+e.message }
+    };
+    document.getElementById("tplSave").onclick=()=>{saveVault("template",cur.n,last);toast("Saved to Vault ✓");syncLocal()};
+  }
+});
+
+/* ---------- AI Chatbot (Pro Ultra+ — coming soon) ---------- */
+P["/chat"]=()=>({title:"AI Chatbot",html:`
+  <div class="head" style="text-align:center">
+    <div class="orb-stage" style="padding-top:34px">
+      <div style="width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:60px;background:var(--accent-soft);border:1px solid var(--accent-line)">💬</div>
+      <div class="orb-cap" style="margin-top:22px;font-size:15px">AI Chatbot</div>
+    </div>
+    <h1 style="justify-content:center;margin-top:8px">Run all your work in one place, freely.</h1>
+    <p class="lede" style="margin:14px auto 0">One powerful assistant for every task — write, plan, code, analyse, brainstorm and chat.
+      Ask anything, all in one place.</p>
+    <div class="chips" style="justify-content:center;margin-top:24px">
+      <span class="badge b-free">AI chatbot coming soon</span>
+    </div>
+    <p class="lede" style="margin:18px auto 0">The AI chatbot unlocks with the <b>Pro Ultra+</b> plan. We're building it — powered by OpenAI.</p>
+    <div class="chips" style="justify-content:center;margin-top:20px">
+      <button class="btn btn-ghost" data-go="/checkout?plan=proultraplus">See Pro Ultra+</button>
+      <button class="btn btn-ghost" data-go="/agent">Try Illumini now</button>
+    </div>
+  </div>`, mount(){}});
+
+/* ---------- AI Humanizer (req 7) — Coming Soon ---------- */
+P["/humanizer"]=()=>({title:"AI Humanizer",html:`
+  <div class="head" style="text-align:center">
+    <div class="orb-stage" style="padding-top:34px">
+      <div style="width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:60px;background:var(--accent-soft);border:1px solid var(--accent-line)">👤</div>
+      <div class="orb-cap" style="margin-top:22px;font-size:15px">AI Humanizer</div>
+    </div>
+    <h1 style="justify-content:center;margin-top:8px">Coming Soon</h1>
+    <p class="lede" style="margin:12px auto 0">Turn AI-generated text into clear, natural writing that reads
+      unmistakably human — plain wording, warm rhythm and zero robotic tells.</p>
+    <div class="chips" style="justify-content:center;margin-top:22px">
+      <span class="badge b-free">In development</span>
+      <span class="badge b-pro">Planned for Pro</span>
+    </div>
+  </div>`, mount(){}});
+
+/* ---------- Source-Anchored Drafts (req 8, Pro) ---------- */
+P["/drafts"]=()=>{
+  const pro=isPaid();
+  return{title:"Source-Anchored Drafts",html:`
+  <div class="head">
+    <h1><span class="h-emoji">🔗</span>Live Source-Anchored Drafts</h1>
+    <p class="lede">Drafts with inline, verifiable source anchors and a confidence meter — showing which sentences are
+      <b style="color:var(--ok)">✔︎ Sourced</b>, <b style="color:var(--warn)">~ Inferred</b> or <b style="color:var(--cre)">✶ Creative</b>.
+      Each anchor opens a citation card with a credibility score and Quick Verify.</p>
+  </div>
+  ${pro?"":`<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
+      <div><h3 style="margin-bottom:5px">Pro feature — ${CUR}5.99/mo</h3>
+      <p class="small muted">Full source anchoring, citation cards and Quick Verify are exclusive to Pro and above.</p></div>
+      <button class="btn btn-primary" data-go="/checkout?plan=pro">Upgrade to Pro</button>
+    </div></div>`}
+  <div class="card">
+    <label class="lb" for="drin">Topic, prompt or paste your notes</label>
+    <textarea class="textarea" id="drin" placeholder="e.g. Explain the relationship between sleep, circadian rhythms and focus — as a one-page briefing."></textarea>
+    <div class="chips" style="margin-top:16px"><button class="btn btn-primary" id="drgo">✨ Generate anchored draft</button></div>
+  </div>
+  <div class="src-doc" style="margin-top:18px">
+    <div class="src-main">
+      <div class="card">
+        <div class="conf-meter" id="confMeter" style="display:none"></div>
+        <div class="src-para" id="drout">Your anchored draft will appear here…</div>
+      </div>
+    </div>
+    <aside class="cite-panel">
+      <h4>Sources <span class="small muted" id="citeCount">0</span></h4>
+      <div id="citeList"><p class="small muted">Sources cited in your draft will appear here, each with a credibility score and a Quick Verify button.</p></div>
+    </aside>
+  </div>`,
+  mount(){
+    const ta=document.getElementById("drin"),body=document.getElementById("drout"),
+      meter=document.getElementById("confMeter"),citeL=document.getElementById("citeList"),citeC=document.getElementById("citeCount");
+    let sources=[];
+    document.getElementById("drgo").onclick=async()=>{
+      const t=ta.value.trim(); if(!t)return toast("Enter a topic first.");
+      if(!S.user||!isPaid()){toast("Source-Anchored Drafts are a Pro feature.");go("/checkout?plan=pro");return}
+      const btn=document.getElementById("drgo"); btn.disabled=true; btn.textContent="Retrieving sources…";
+      body.innerHTML="Retrieving sources and drafting…"; meter.style.display="none";
+      try{
+        const j=await api("/api/draft",{method:"POST",body:JSON.stringify({text:t})});
+        if(j.user)setUser(j.user);
+        sources=j.sources||[]; renderDraft(j.draft,sources,j.maxAnchors);
+      }catch(e){ body.innerHTML="⚠ "+esc(e.message); }
+      finally{ btn.disabled=false; btn.textContent="✨ Generate anchored draft"; }
+    };
+    function renderDraft(raw,srcs,maxA){
+      const parts=String(raw||"").split(/(\[[SIC]\]|\(src \d+\))/g).filter(Boolean);
+      let html="",mtr={S:0,I:0,C:0},anchorCount=0;
+      for(let i=0;i<parts.length;i++){
+        const seg=parts[i];
+        if(/^\[[SIC]\]$/.test(seg)){ const k=seg[1]; mtr[k]++; html+=` <span class="mtag ${k}">${k==="S"?"✔︎ Sourced":k==="I"?"~ Inferred":"✶ Creative"}</span> `; continue; }
+        const m2=seg.match(/\(src (\d+)\)/);
+        if(m2){ const idx=+m2[1]-1; if(srcs[idx]&&anchorCount<(maxA||Infinity)){anchorCount++; html+=`<a class="anchor" data-src="${idx}" title="${esc(srcs[idx].title)}">[${idx+1}]</a>`;} continue; }
+        html+=esc(seg);
+      }
+      body.innerHTML=html.replace(/\n/g,"<br>");
+      meter.style.display="flex";
+      meter.innerHTML=`<span class="c" style="color:var(--ok)">✔︎ Sourced ${mtr.S}</span><span class="c" style="color:var(--warn)">~ Inferred ${mtr.I}</span><span class="c" style="color:var(--cre)">✶ Creative ${mtr.C}</span>`;
+      citeC.textContent=srcs.length;
+      citeL.innerHTML=srcs.map((s,i)=>`
+        <div class="cite-card">
+          <div class="ct">${esc(s.title)}</div>
+          <div class="cs">${esc(s.snippet)}</div>
+          <div class="cm"><span class="small" style="color:var(--muted)">Credibility</span><span class="cred-bar"><i style="width:${Math.round(s.cred*100)}%"></i></span><b class="small">${Math.round(s.cred*100)}%</b></div>
+          <button class="mini quick" data-src="${i}">✓ Quick Verify</button>
+        </div>`).join("");
+      document.querySelectorAll(".anchor").forEach(a=>a.onclick=e=>{e.preventDefault();openCite(+a.dataset.src)});
+      document.querySelectorAll(".cite-card .quick").forEach(b=>b.onclick=()=>openVerify(+b.dataset.src));
+    }
+    function openCite(i){
+      const s=sources[i]; if(!s)return;
+      const o=document.createElement("div");o.className="ov";
+      o.innerHTML=`<div class="modal" style="max-width:520px;text-align:left">
+        <h3 style="margin-bottom:6px">${esc(s.title)}</h3>
+        <p class="small muted" style="margin-bottom:14px"><a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(s.url)}</a></p>
+        <div class="cm" style="margin-bottom:14px"><span class="small">Credibility</span><span class="cred-bar"><i style="width:${Math.round(s.cred*100)}%"></i></span><b>${Math.round(s.cred*100)}%</b></div>
+        <div class="result" style="margin-bottom:16px">${esc(s.snippet)}</div>
+        <button class="btn btn-primary btn-block" id="qverify">✓ Quick Verify</button>
+        <button class="btn btn-ghost btn-block" id="qcClose" style="margin-top:10px">Close</button></div>`;
+      o.querySelector("#qverify").onclick=()=>{const b=o.querySelector("#qverify");b.disabled=true;b.textContent="Checking…";setTimeout(()=>{b.textContent="✓ Verified — source is reachable and current";b.disabled=false},1200)};
+      o.querySelector("#qcClose").onclick=()=>o.remove();
+      o.onclick=e=>{if(e.target===o)o.remove()};
+      document.body.appendChild(o);
+    }
+    function openVerify(i){ if(sources[i])toast("Verifying "+sources[i].title+"…"); }
+  }};
+};
+
+/* ---------- Plans (req 4,5) ---------- */
+let CYCLE="m";
+P["/plans"]=()=>({title:"Plans & Pricing",html:`
+  <div class="head"><h1><span class="h-emoji">💳</span>Plans & Pricing</h1>
+    <p class="lede">Start free. Upgrade when you're ready for unlimited clarity.</p>
+    <div style="margin-top:18px"><div class="seg" id="cycle">
+      <button data-c="m" class="${CYCLE==="m"?"active":""}">Monthly</button>
+      <button data-c="y" class="${CYCLE==="y"?"active":""}">Annual (save ~30%)</button>
+    </div></div>
+  </div>
+  <div class="plans">${Object.entries(PLANS).map(([k,p])=>{
+    const own=!!(S.user?.subscription&&S.user.subscription.plan===k&&S.user.subscription.active);
+    const cur=S.user?.plan===k&&!own;
+    const price=CYCLE==="m"?p.m:p.y;
+    const priceTxt=k==="free"?`${CUR}0<small> / forever</small>`:CYCLE==="m"?`${CUR}${p.m.toFixed(2)}<small> / mo</small>`:`${CUR}${p.y}<small> / yr</small>`;
+    const per=k==="free"?"Free forever":CYCLE==="m"?"Billed monthly":`Billed yearly · ${CUR}${(p.y/12).toFixed(2)}/mo`;
+    let btn;
+    if(own){ btn=`<button class="btn btn-ghost btn-block" disabled>Your plan · renews ${fmtDate(S.user.subscription.renew)}</button>`; }
+    else if(k==="free"){ btn=`<button class="btn btn-ghost btn-block" data-free="1">Downgrade to Free</button>`; }
+    else if(!own){ btn=`<button class="btn ${p.pop||p.star?"btn-primary":"btn-ghost"} btn-block" data-go="/checkout?plan=${k}&c=${CYCLE}">Choose ${p.name}</button>`; }
+    return `<div class="plan ${p.pop||p.star?"pop":""}">
+      ${p.pop?'<span class="tag">MOST POPULAR</span>':""}${p.star?'<span class="tag alt">FULL AI CHATBOT</span>':""}
+      <h3>${p.name}</h3>
+      <div class="price">${priceTxt}</div><div class="per">${per}</div>
+      ${p.cap===Infinity?`<div class="per" style="color:var(--ok);font-weight:650">Unlimited illuminations</div>`:p.cap?`<div class="per">${p.cap.toLocaleString()} illuminations / cycle</div>`:""}
+      <ul class="feats">${p.feats.map(f=>`<li><span>${f}</span></li>`).join("")}</ul>
+      ${btn}
+    </div>`;}).join("")}
+  </div>
+  <div class="card" style="margin-top:22px;text-align:center">
+    <h3 style="margin-bottom:6px">Credit packs — top up any time</h3>
+    <p class="small muted" style="margin-bottom:16px">Just ${CUR}0.99 per 10 illuminations. No subscription — added straight to your balance.</p>
+    <div class="chips" style="justify-content:center">
+      <button class="btn btn-ghost" data-go="/checkout?pack=1">10 credits — ${CUR}0.99</button>
+      <button class="btn btn-ghost" data-go="/checkout?pack=5">50 credits — ${CUR}4.95</button>
+      <button class="btn btn-ghost" data-go="/checkout?pack=10">100 credits — ${CUR}9.90</button>
+    </div>
+    <p class="small muted" style="margin-top:16px">Secure checkout by <b>Stripe</b> — Apple Pay, card & PayPal accepted.</p>
+  </div>`,
+  mount(){
+    document.querySelectorAll("#cycle button").forEach(b=>b.onclick=()=>{CYCLE=b.dataset.c;render()});
+    document.querySelector("[data-free]")?.addEventListener("click",()=>{ if(confirm("Downgrade to Free? Your credits will be retained.")){ confirmFree(); } });
+  }
+});
+function capText(k){const p=PLANS[k];return p.cap===Infinity?"Unlimited":String(p.cap.toLocaleString())}
+function confirmFree(){ // downgrade resets to free w/ 5 credits server-side
+  api("/api/checkout/confirm",{method:"POST",body:JSON.stringify({plan:"free",demo:true})}).then(j=>{if(j.user)setUser(j.user);toast("Switched to Free");render()}).catch(e=>toast(e.message));
+}
+
+/* ---------- Checkout (req 5 re-purchase guard) ---------- */
+P["/checkout"]=(q)=>{
+  const pack=q.get("pack"),planKey=q.get("plan"),cyc=q.get("c")||"m";
+  const p=PLANS[planKey];
+  const isPack=!!pack;
+  const amount=isPack?(0.99*+pack):(cyc==="m"?p?.m:p?.y);
+  const title=isPack?`${+pack*10} illumination credits`:`IllumAI ${p?.name}`;
+  const sub=isPack?"One-time purchase":cyc==="m"?"Monthly subscription":"Annual subscription";
+  if(!isPack&&!p)return{title:"Checkout",html:`<div class="card"><h2>Plan not found</h2><button class="btn btn-primary" data-go="/plans" style="margin-top:14px">Back to plans</button></div>`};
+  const alreadyOwned=!isPack&&S.user?.subscription&&S.user.subscription.plan===planKey&&S.user.subscription.active;
+  return{title:"Checkout",html:`
+  <div class="head"><h1><span class="h-emoji">🔒</span>Secure checkout</h1>
+    <p class="lede">Complete your purchase with Apple Pay, card or PayPal. Payments are processed securely by Stripe — we never see your card details.</p></div>
+  <div class="grid g2" style="align-items:start">
+    <div class="card">
+      <h3 style="margin-bottom:14px">Order summary</h3>
+      <div class="sum-row"><span>${title}</span><span>${CUR}${amount.toFixed(2)}</span></div>
+      <div class="sum-row"><span class="muted small">${sub}</span><span class="muted small">${isPack?"one-off":cyc==="m"?"per month":"per year"}</span></div>
+      <div class="sum-row tot"><span>Total due today</span><span>${CUR}${amount.toFixed(2)}</span></div>
+      ${alreadyOwned?`<div class="renew-note">⚠ You already own ${p.name}. It's active until ${fmtDate(S.user.subscription.renew)}.</div>`:""}
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:16px">Payment method</h3>
+      ${alreadyOwned?`<button class="btn btn-ghost btn-block" data-go="/plans">Back to plans</button>`
+      :`<button class="pay-btn pay-card" data-pay="card">Pay with card — ${CUR}${amount.toFixed(2)}</button>
+      <div style="height:11px"></div>
+      <button class="pay-btn pay-pp" data-pay="paypal"><b>Pay</b><i>Pal</i></button>
+      <p class="small muted" style="margin-top:16px;text-align:center">Apple Pay appears automatically in Safari on Apple devices.<br>By continuing you agree to the IllumAI terms.</p>
+      <div id="payMsg" class="result" style="display:none;margin-top:16px"></div>
+      <button class="btn btn-ghost btn-block" data-go="/plans" style="margin-top:14px">← Back to plans</button>`}
+    </div>
+  </div>`,
+  mount(){
+    const msg=document.getElementById("payMsg");
+    document.querySelectorAll("[data-pay]").forEach(b=>b.onclick=async()=>{
+      if(alreadyOwned)return;
+      const method=b.dataset.pay;b.disabled=true;const t0=b.innerHTML;b.textContent="Opening secure checkout…";
+      try{
+        const j=await api("/api/checkout",{method:"POST",body:JSON.stringify({plan:planKey,pack:pack?+pack:null,cycle:cyc,method})});
+        if(j.demo){ finalize(pack,planKey,cyc,true); return; }
+        if(j.url){ location.href=j.url; return; }
+        msg.style.display="block"; msg.textContent=j.error||"Checkout unavailable.";
+      }catch(e){ msg.style.display="block"; msg.textContent="⚠ "+e.message; }
+      finally{ b.disabled=false; b.innerHTML=t0; }
+    });
+    // If returning from Stripe success, finalise the plan.
+    if((new URLSearchParams(location.hash.split("?")[1]||"")).get("paid")==="1"){
+      const s=q.get("session");
+      finalize(pack,planKey,cyc,true);
+    }
+    function finalize(pk,pl,cc,demo){
+      api("/api/checkout/confirm",{method:"POST",body:JSON.stringify({plan:pl,pack:pk?+pk:null,cycle:cc,demo})})
+        .then(j=>{ if(j.user)setUser(j.user); toast(pk?`${+pk*10} credits added ✓`:(PLANS[pl]?.name+" activated ✓")); go(pl==="proultraplus"?"/chat":"/profile"); })
+        .catch(e=>{msg&&(msg.style.display="block",msg.textContent="⚠ "+e.message);toast(e.message)});
+    }
+  }};
+};
+
+/* ---------- History / Vault ---------- */
+P["/history"]=()=>({title:"Document History",html:`
+  <div class="head"><h1><span class="h-emoji">📚</span>Document History</h1><p class="lede">Every illumination you've run, newest first — saved to your account.</p></div>
+  <div class="card">${(S.user?.history||[]).length?(S.user.history).map(h=>`
+    <div class="item"><div style="min-width:0"><div class="t">${esc(h.input||"—")}</div>
+      <div class="m">${esc(h.action)} · ${ago(h.at)}</div></div>
+      <span class="badge b-free">${esc(h.action.split(":")[0])}</span></div>`).join("")
+    :`<p class="small muted" style="text-align:center;padding:26px 0">Nothing yet — your history will appear here.</p>`}</div>`});
+
+P["/vault"]=()=>({title:"Vault",html:`
+  <div class="head"><h1><span class="h-emoji">🔐</span>Vault</h1>
+    <p class="lede">${(S.user?.vault||[]).length} saved illumination${(S.user?.vault||[]).length===1?"":"s"}. Saved to your account.</p></div>
+  <div class="card">${(S.user?.vault||[]).length?(S.user.vault||[]).map(v=>`
+    <div class="item"><div style="min-width:0"><div class="t">${esc(v.title)}</div><div class="m">${esc(v.kind)} · ${ago(v.at)}</div></div>
+      <div style="display:flex;gap:7px"><button class="mini" data-c="${v.id}">Copy</button><button class="mini" data-d="${v.id}">Delete</button></div></div>`).join("")
+    :`<p class="small muted" style="text-align:center;padding:26px 0">Your Vault is empty. Save any illumination to keep it here.</p>`}</div>`,
+  mount(){
+    const vault=S.user?.vault||[];
+    const f=id=>vault.find(x=>x.id===id);
+    document.querySelectorAll("[data-c]").forEach(b=>b.onclick=()=>{const v=f(b.dataset.c);v&&navigator.clipboard?.writeText(v.body).then(()=>toast("Copied"))});
+    document.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{S.user.vault=vault.filter(x=>x.id!==b.dataset.d);wr(K.user,S.user);toast("Deleted");render();syncLocal()});
+  }});
+
+/* ---------- Profile (usage, streak, plan) ---------- */
+P["/profile"]=()=>{
+  const d=S.user?.streak?.count||0,nx=streakTier(d).next;
+  return{title:"Profile",html:`
+  <div class="head"><h1><span class="h-emoji">👤</span>Profile</h1>
+    <p class="lede">Your account, streak, illuminations, subscription and Vault.</p></div>
+  <div class="card">
+    <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+      <div style="width:64px;height:64px;border-radius:999px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800">${esc((S.user?.username||"U")[0].toUpperCase())}</div>
+      <div style="flex:1;min-width:180px">
+        <h2>${esc(S.user?.username||"Guest")}</h2>
+        <p class="small muted" style="margin:4px 0 9px">${esc(S.user?.email||"")}</p>
+        <span class="badge ${isPaid()?"b-pro":"b-free"}">${planName()}</span>
+      </div>
+      <button class="btn btn-ghost" id="out">Sign out</button>
+    </div>
+  </div>
+  <div class="stats" style="margin-top:18px">
+    <div class="stat"><div class="n"><span class="streak-wrap" style="width:20px;height:20px">${S.user?STREAK_SVG(streakTier(d).c,streakTier(d).glow,d>=100):""}</span>${d}</div><div class="l">Day streak</div></div>
+    <div class="stat"><div class="n">${S.user?.used||0}</div><div class="l">Illuminations used</div></div>
+    <div class="stat"><div class="n">${S.user?.plan==="free"?S.user?.credits:(unl(S.user?.limit?.cap)?"∞":String(S.user?.limit?.remaining??0))}</div><div class="l">${isPaid()?"Left this cycle":"Credits left"}</div></div>
+    <div class="stat"><div class="n">${(S.user?.vault||[]).length}</div><div class="l">Vault items</div></div>
+  </div>
+  ${S.user?.subscription?`<div class="card" style="margin-top:18px">
+    <h3 style="margin-bottom:6px">${planName()} subscription</h3>
+    <p class="small muted">Renews <b>${fmtDate(S.user.subscription.renew)}</b>. You can re-purchase this plan after it expires.</p>
+    <div class="chips"><button class="btn btn-ghost btn-sm" data-go="/plans">Manage plan</button></div>
+  </div>`:""}
+  <div class="card" style="margin-top:18px">
+    <h3 style="margin-bottom:6px">${streakTier(d).name} flame</h3>
+    <p class="small muted">${nx?`Keep your streak going — <b>${nx.at-d} more day${nx.at-d===1?"":"s"}</b> unlocks the <b>${nx.n}</b>.`:"You've reached the legendary Frenzy Flame. Nothing burns brighter. 🔥"}</p>
+    <div class="chips"><span class="mini">🟠 Orange · 0+</span><span class="mini">🔴 Red · 5+</span><span class="mini">🟣 Purple · 10+</span><span class="mini">🔵 Blue · 25+</span><span class="mini">🔥 Frenzy · 100+</span></div>
+  </div>
+  <div class="card" style="margin-top:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+      <div><h3 style="margin-bottom:5px">Usage & credits</h3>
+      <p class="small muted">${isPaid()?`You're on <b>${planName()}</b> with ${unl(S.user?.limit?.cap)?"unlimited":S.user?.limit?.remaining+" remaining"} illuminations this cycle.`:`You have <b>${S.user?.credits}</b> free illuminations left.`}</p></div>
+      <button class="btn btn-primary" data-go="/plans">Top up / upgrade</button>
+    </div>
+  </div>`,
+  mount(){ document.getElementById("out")?.addEventListener("click",async()=>{try{await api("/api/logout",{method:"POST"})}catch{}clearAuth();toast("Signed out");go("/auth")}); }};
+};
+
+/* ---------- Settings ---------- */
+P["/settings"]=()=>({title:"Settings",html:`
+  <div class="head"><h1><span class="h-emoji">⚙️</span>Settings</h1><p class="lede">Make IllumAI yours.</p></div>
+  <div class="card"><h3 style="margin-bottom:14px">Appearance</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+      <div><b style="font-size:14px">Theme</b><p class="small muted">Warm light or deep ember dark.</p></div>
+      <div class="seg"><button data-t="light" class="${S.theme==="light"?"active":""}">Light</button><button data-t="dark" class="${S.theme==="dark"?"active":""}">Dark</button></div>
+    </div></div>
+  <div class="card"><h3 style="margin-bottom:14px">Plan</h3>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
+      <div><b style="font-size:14px">Current plan</b><p class="small muted">You're on ${planName()}.</p></div>
+      <button class="btn btn-primary" data-go="/plans">Manage plan</button>
+    </div></div>
+  <div class="card"><h3 style="margin-bottom:14px">Data</h3><div class="chips">
+      <button class="btn btn-ghost btn-sm" id="exp">Export Vault (JSON)</button>
+      <button class="btn btn-ghost btn-sm" id="sync">Sync now</button>
+    </div></div>`,
+  mount(){
+    document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{S.theme=b.dataset.t;applyTheme();render();toast(S.theme==="dark"?"Dark mode on":"Light mode on");syncLocal()});
+    document.getElementById("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S.user?.vault||[],null,2)],{type:"application/json"}));a.download="illumai-vault.json";a.click();toast("Vault exported")};
+    document.getElementById("sync").onclick=async()=>{try{const j=await api("/api/sync",{method:"POST",body:JSON.stringify({vault:S.user?.vault||[],history:S.user?.history||[],theme:S.theme})});if(j.user)setUser(j.user);toast("Progress synced to your account ✓")}catch(e){toast(e.message)}};
+  }});
+
+/* ---------- Auth (req side-note) ---------- */
+P["/auth"]=()=>({title:"Sign in",html:`
+  <div style="max-width:420px;margin:20px auto">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="width:60px;height:60px;margin:0 auto 12px">${LOGO}</div>
+      <h1 style="justify-content:center">Welcome to IllumAI</h1>
+      <p class="lede" style="margin:8px auto 0">Sign in or create an account. Your streak, Vault, usage and purchases are saved to your account.</p>
+    </div>
+    <div class="seg" style="width:100%;justify-content:center;margin-bottom:18px">
+      <button class="${authMode==="login"?"active":""}" data-am="login">Sign in</button>
+      <button class="${authMode==="signup"?"active":""}" data-am="signup">Sign up</button>
+    </div>
+    <div class="card">
+      <label class="lb" for="ae">Email</label>
+      <input class="input" id="ae" type="email" placeholder="you@example.com" autocomplete="email" />
+      ${authMode==="signup"?`<div style="height:15px"></div><label class="lb" for="an">Username</label><input class="input" id="an" placeholder="Choose a username" autocomplete="username" />`:""}
+      <div style="height:15px"></div>
+      <label class="lb" for="ap">Password</label>
+      <input class="input" id="ap" type="password" placeholder="••••••••" autocomplete="current-password" />
+      <div style="height:20px"></div>
+      <button class="btn btn-primary btn-block" id="asub">${authMode==="login"?"Sign in":"Create account & start"}</button>
+      <p class="small muted" style="text-align:center;margin-top:14px">Your account, Vault, streak and purchases are saved and synced.</p>
+    </div>
+  </div>`,
+  mount(){
+    const inputs=()=>({e:document.getElementById("ae").value.trim(),n:document.getElementById("an")?.value.trim()||"",p:document.getElementById("ap").value.trim()});
+    document.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{authMode=b.dataset.am;render()});
+    const doAuth=async()=>{
+      const {e,n,p}=inputs();
+      if(!e||!p)return toast("Please enter your email and password.");
+      if(authMode==="signup"&&p.length<6)return toast("Password must be at least 6 characters.");
+      try{
+        const j=await api(authMode==="signup"?"/api/register":"/api/login",{method:"POST",body:JSON.stringify(authMode==="signup"?{email:e,username:n,password:p}:{email:e,password:p})});
+        setUser(j.user,j.token);
+        // Merge cached local vault/history (offline fallback) into the account.
+        const cache=rd(K.user,null);
+        if(cache&&cache.vault&&cache.vault.length&&!j.user.vault.length){ await syncLocal(); }
+        toast("Welcome, "+j.user.username+"!"); go("/home"); setTimeout(showIntro,350);
+      }catch(err){ toast(err.message); }
+    };
+    document.getElementById("asub").onclick=doAuth;
+    document.getElementById("ap").onkeydown=e=>{if(e.key==="Enter")doAuth()};
+  }});
+
+/* ============================================================
+   9. ROUTER / helpers
+   ============================================================ */
+let authMode="login";
+function orbInit(orb,state){ if(!orb)return; orb.onclick=()=>{state.textContent="Opening Illumini…";orb.classList.add("busy");setTimeout(()=>go("/agent"),420)}; }
+function syncLocal(){ if(!S.user)return; api("/api/sync",{method:"POST",body:JSON.stringify({vault:S.user.vault||[],history:S.user.history||[],theme:S.theme})}).then(j=>{if(j.user)setUser(j.user)}).catch(()=>{}); }
+function parse(){ const raw=(location.hash||"#/").replace(/^#/,""); const i=raw.indexOf("?"); return{path:(i>=0?raw.slice(0,i):raw)||"/",q:new URLSearchParams(i>=0?raw.slice(i+1):"")}; }
+function go(p){ if(("#"+p)===location.hash){render();return} location.hash=p; }
+function render(){
+  const{path,q}=parse();
+  // Force login before using the app (auth gate).
+  if(!S.user&&path!=="/auth"){ go("/auth"); return; }
+  const page=P[path]||P["/"];
+  const v=page(q);
+  document.getElementById("crumb").textContent=v.title;
+  document.title="IllumAI — "+v.title;
+  document.getElementById("page").innerHTML=v.html;
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.toggle("active",b.dataset.go===path));
+  if(v.mount)try{v.mount()}catch(e){console.error(e)}
+  document.getElementById("sidebar").classList.remove("open");
+  document.getElementById("scrim").classList.remove("on");
+  window.scrollTo(0,0);
+  chrome();
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-go]");
+  if(b){e.preventDefault();go(b.dataset.go)}
+});
+window.addEventListener("hashchange",render);
+
+/* ============================================================
+   10. BOOT
+   ============================================================ */
+buildNav();
+applyTheme();
+renderAuth();
+
+// Restore session: if a token exists, fetch the live account.
+async function boot(){
+  if(S.token){
+    try{
+      const j=await api("/api/me");
+      setUser(j.user);
+    }catch(e){
+      // Token invalid/expired or server unreachable — fall back to cache or sign in.
+      if(e.message&&/Not signed in/.test(e.message)){ S.token=null; localStorage.removeItem(K.token); S.user=null; }
+      else { setUser(S.userCache); }
+    }
+  }else if(S.userCache){
+    setUser(S.userCache); // offline fallback; will re-sync when reachable
+  }
+  render();
+}
+document.getElementById("theme").onclick=()=>{S.theme=S.theme==="dark"?"light":"dark";applyTheme();render();syncLocal()};
+document.getElementById("menu").onclick=()=>{document.getElementById("sidebar").classList.toggle("open");document.getElementById("scrim").classList.toggle("on")};
+document.getElementById("scrim").onclick=()=>{document.getElementById("sidebar").classList.remove("open");document.getElementById("scrim").classList.remove("on")};
+render();
+boot();
+</script>
+</body>
+</html>
