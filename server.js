@@ -465,7 +465,8 @@ const server = http.createServer(async (req, res) => {
       const { username, email, password } = JSON.parse(await readBody(req));
       const e = String(email || "").toLowerCase();
       if (!/^\S+@\S+\.\S+$/.test(e)) throw new Error("Please enter a valid email address.");
-      if (!password || String(password).length < 6) throw new Error("Password must be at least 6 characters.");
+      const pv=String(password||"");
+      if(!pv||pv.length<8||!/[A-Z]/.test(pv)||!/[a-z]/.test(pv)||!/[0-9]/.test(pv)||(pv.length<12&&!/[^A-Za-z0-9]/.test(pv))) throw new Error("Password needs: at least 8 characters, an uppercase letter, a lowercase letter, a number, and a special character if under 12.");
       if (users[e]) throw new Error("An account with that email already exists. Try signing in.");
       const acct = newAccount(String(username || "").trim() || e.split("@")[0], e, password);
       if (OWNER_EMAILS.includes(e)) grantOwner(acct);

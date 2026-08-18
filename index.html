@@ -1383,8 +1383,13 @@ P["/auth"]=()=>({title:"Sign in",html:`
       ${authMode==="signup"?`<div style="height:15px"></div><label class="lb" for="an">Username <span class="small muted">(shown on your profile — optional)</span></label><input class="input" id="an" placeholder="e.g. jere" autocomplete="nickname" />`:""}
       <div style="height:15px"></div>
       <label class="lb" for="ap">Password</label>
-      <input class="input" id="ap" type="password" placeholder="••••••••" autocomplete="current-password" />
-      <div style="height:20px"></div>
+      <input class="input" id="ap" type="password" placeholder="••••••••" autocomplete="new-password" />
+      ${authMode==="signup"?`<div id="pwreq" style="margin-top:9px;display:flex;flex-direction:column;gap:5px;font-size:12px;font-weight:600">
+        <span data-r="len" style="display:flex;align-items:center;gap:6px;color:#e5484d"><i class="pwico" style="width:14px;text-align:center;font-style:normal">✕</i>Must contain at least 8 characters</span>
+        <span data-r="case" style="display:flex;align-items:center;gap:6px;color:#e5484d"><i class="pwico" style="width:14px;text-align:center;font-style:normal">✕</i>Must contain uppercase, lowercase letters, and numbers</span>
+        <span data-r="spec" style="display:flex;align-items:center;gap:6px;color:#e5484d"><i class="pwico" style="width:14px;text-align:center;font-style:normal">✕</i>If less than 12 characters, must contain a special character</span>
+      </div>`:""}
+      <div style="height:${authMode==="signup"?"8":"20"}px"></div>
       <button class="btn btn-primary btn-block" id="asub">${authMode==="login"?"Sign in":"Create account & start"}</button>
       <p class="small muted" style="text-align:center;margin-top:14px">${authMode==="login"?"Use the email or username you signed up with.":"Your account, Vault, streak and purchases are saved and synced."}</p>
     </div>
@@ -1392,10 +1397,16 @@ P["/auth"]=()=>({title:"Sign in",html:`
   mount(){
     const inputs=()=>({e:document.getElementById("ae").value.trim(),n:document.getElementById("an")?.value.trim()||"",p:document.getElementById("ap").value.trim()});
     document.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{authMode=b.dataset.am;render()});
+    const pw=document.getElementById("ap");
+    const pwOk=v=>v.length>=8&&/[A-Z]/.test(v)&&/[a-z]/.test(v)&&/[0-9]/.test(v)&&(v.length>=12||/[^A-Za-z0-9]/.test(v));
+    if(authMode==="signup"&&pw){
+      const pwRules={len:v=>v.length>=8,case:v=>/[A-Z]/.test(v)&&/[a-z]/.test(v)&&/[0-9]/.test(v),spec:v=>v.length>=12||/[^A-Za-z0-9]/.test(v)};
+      pw.addEventListener("input",()=>{document.querySelectorAll("#pwreq [data-r]").forEach(el=>{const ok=pwRules[el.dataset.r](pw.value);el.querySelector(".pwico").textContent=ok?"✓":"✕";el.style.color=ok?"#3ddc97":"#e5484d";})});
+    }
     const doAuth=async()=>{
       const {e,n,p}=inputs();
       if(!e||!p)return toast("Please enter your email and password.");
-      if(authMode==="signup"&&p.length<6)return toast("Password must be at least 6 characters.");
+      if(authMode==="signup"&&!pwOk(p))return toast("Password needs: 8+ characters, an uppercase letter, a lowercase letter, a number, and a special character if under 12.");
       try{
         const j=await api(authMode==="signup"?"/api/register":"/api/login",{method:"POST",body:JSON.stringify(authMode==="signup"?{email:e,username:n,password:p}:{email:e,password:p})});
         setUser(j.user,j.token);
