@@ -403,8 +403,8 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
 .illumload svg{width:100%;height:100%;display:block}
 .loading-txt{font-size:13px;color:var(--muted)}
 /* Loader: only the star moves — the box stays still (less aggressive). */
-.loadbox{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#e89a58,#c2532f 55%,#8f3423);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-sm)}
-.loadbox .starload{width:20px;height:20px;display:block;animation:starSpin 1.7s linear infinite}
+.loadbox{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.loadbox .starload{width:36px;height:36px;display:block;animation:starSpin 1.7s linear infinite}
 .starload svg{width:100%;height:100%;display:block}
 .starload svg path{transform-origin:center;animation:starPulse 1.7s ease-in-out infinite}
 @keyframes starSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
