@@ -537,7 +537,7 @@ S.user = null; // real account from server once loaded
 const CUR="£";
 const PLANS={
   free:{name:"Free",m:0,y:0,cap:null,cred:5,feats:["5 free illuminations","All 5 core tools","Vault — 25 saved items","2 anchors on Source Drafts"]},
-  pro:{name:"Pro",m:5.99,y:49.99,cap:200,pop:1,feats:["200 illuminations / cycle","All 5 core tools","<b>Live Source-Anchored Drafts</b>","Citation cards + Quick Verify","Vault — 100 saves","Priority email support"]},
+  pro:{name:"Pro",m:5.99,y:49.99,cap:200,pop:1,feats:["200 illuminations / cycle","All 5 core tools","<b>Cognitive Drafting</b>","Citation cards + Quick Verify","Vault — 100 saves","Priority email support"]},
   proplus:{name:"Pro+",m:12.99,y:109.99,pop:1,cap:650,feats:["650 illuminations / cycle","Everything in Pro","Priority processing","Multi-AI orchestration","Unlimited Vault + search","24/7 priority support"]},
   proultra:{name:"Pro Ultra",m:29.99,y:239,cap:2500,feats:["2,500 illuminations / cycle","Instant priority queue","Advanced Vault (tags, export)","Custom templates","Team sharing","API access & white-label"]},
   proultraplus:{name:"Pro Ultra+",m:49.99,y:399,star:1,cap:Infinity,feats:["Everything in Pro Ultra","<b>Unlimited illuminations</b>","Ask Anything — full AI chatbot","Multi-AI reasoning + coding","Unlimited chat history","Dedicated success manager"]}
@@ -655,7 +655,7 @@ const NAV=[
   {r:"/agent",i:"orb",t:"Illumini Agent"},
   {s:"AI Writing"},
   {r:"/templates",i:"tpl",t:"AI Writing Templates"},
-  {r:"/drafts",i:"src",t:"Source-Anchored Drafts",pro:"PRO"},
+  {r:"/drafts",i:"src",t:"Cognitive Drafting",pro:"PRO"},
   {s:"AI Tools"},
   {r:"/summarise",i:"sum",t:"Text Summariser"},
   {r:"/explain",i:"exp",t:"Explain"},
@@ -720,7 +720,7 @@ function chrome(){
       <button class="btn btn-soft btn-sm btn-block" data-go="/profile">View usage</button>`;
   }else{
     const nx=S.user?.plan==="free"?"Pro":PLANS[S.user?.plan]?.name?"Upgrade":"Pro";
-    u.innerHTML=`<h5>Unlock ${nx}</h5><p>More illuminations, Source-Anchored Drafts & the full assistant.</p>
+    u.innerHTML=`<h5>Unlock ${nx}</h5><p>More illuminations, Cognitive Drafting & the full assistant.</p>
       <button class="btn btn-dark btn-sm btn-block" data-go="/plans">Upgrade →</button>`;
   }
 }
@@ -775,7 +775,7 @@ P["/home"]=()=>({title:"Home",html:`
     <div class="chips" style="justify-content:center;margin-top:20px">
       <button class="btn btn-primary btn-lg" data-go="/agent">Open Illumini →</button>
       <button class="btn btn-ghost btn-lg" data-go="/summarise">Try a tool</button>
-      <button class="btn btn-ghost btn-lg" data-go="/drafts">Source-Anchored Drafts</button>
+      <button class="btn btn-ghost btn-lg" data-go="/drafts">Cognitive Drafting</button>
     </div>
   </div>
   <div class="nav-sec" style="padding-left:2px">AI Tools</div>
@@ -994,10 +994,10 @@ P["/humanizer"]=()=>({title:"AI Humanizer",html:`
 P["/drafts"]=()=>{
   const pro=isPaid();
   const DR_SUGG=["Explain how sleep, circadian rhythms and focus relate — as a one-page briefing.","Compare the pros of the Mediterranean vs the keto diet.","Explain how quantum computing generates electricity in simple terms.","Summarise the latest research on remote work productivity."];
-  return{title:"Source-Anchored Drafts",html:`
+  return{title:"Cognitive Drafting",html:`
   <div class="head">
-    <h1><span class="h-emoji">🔗</span>Live Source-Anchored Drafts</h1>
-    <p class="lede"><b style="color:var(--accent)">Exclusive to Source-Anchored Drafts.</b> Every claim in your draft is <b>checked against a real source</b> — tap any highlighted sentence to see exactly where it came from, with a credibility score and one-tap Verify. No more guessing. Your draft builds itself, <b style="color:var(--ok)">✔︎ Sourced</b> · <b style="color:var(--warn)">~ Inferred</b> · <b style="color:var(--cre)">✶ Creative</b>.</p>
+    <h1><span class="h-emoji">🔗</span>Cognitive Drafting</h1>
+    <p class="lede"><b style="color:var(--accent)">Exclusive to Cognitive Drafting.</b> Every claim in your draft is <b>checked against a real source</b> — tap any highlighted sentence to see exactly where it came from, with a credibility score and one-tap Verify. No more guessing. Your draft builds itself, <b style="color:var(--ok)">✔︎ Sourced</b> · <b style="color:var(--warn)">~ Inferred</b> · <b style="color:var(--cre)">✶ Creative</b>.</p>
   </div>
   ${pro?"":`<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
@@ -1030,7 +1030,7 @@ P["/drafts"]=()=>{
     document.querySelectorAll("#drsug .sug").forEach(s=>s.onclick=()=>{ta.value=s.dataset.q;ta.focus()});
     document.getElementById("drgo").onclick=async()=>{
       const t=ta.value.trim(); if(!t)return toast("Enter a topic first.");
-      if(!S.user||!isPaid()){toast("Source-Anchored Drafts are a Pro feature.");go("/checkout?plan=pro");return}
+      if(!S.user||!isPaid()){toast("Cognitive Drafting is a Pro feature.");go("/checkout?plan=pro");return}
       const btn=document.getElementById("drgo"); btn.disabled=true; btn.textContent="Retrieving sources…";
       body.innerHTML="Retrieving sources and drafting…"; meter.style.display="none";
       try{
