@@ -239,6 +239,17 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
 /* ==================================================================
  * Plans, limits & streak (server-authoritative)
  * ================================================================== */
+// Owner accounts (the creator) always hold the top plan + every pack, auto-granted.
+const OWNER_EMAILS = ["usimere@gmail.com", "usimijere@gmail.com"];
+function grantOwner(u) {
+  u.owner = true;
+  u.plan = "proultraplus";
+  u.credits = 1e9;
+  u.subscription = { status: "active", plan: "proultraplus", cycle: "m", started: Date.now(), renew: Date.now() + 31536000000 };
+  u.usage = { cycleStart: Date.now(), cycleEnd: Date.now() + 31536000000, used: 0 };
+  return u;
+}
+
 const PLAN_PRICES = {
   pro:          { name: "Pro",        m: 5.99,  y: 49.99 },
   proplus:      { name: "Pro+",       m: 12.99, y: 109.99 },
@@ -317,6 +328,7 @@ function publicUser(u) {
   const enc = (v) => (v === Infinity ? "unlimited" : v);
   return {
     id: u.id, username: u.username, email: u.email,
+    owner: !!u.owner,
     plan: u.plan, planName: PLAN_PRICES[u.plan]?.name || "Free",
     credits: u.plan === "free" ? u.credits : "unlimited",
     used: u.usedTotal,
@@ -447,6 +459,7 @@ const server = http.createServer(async (req, res) => {
       if (!password || String(password).length < 6) throw new Error("Password must be at least 6 characters.");
       if (users[e]) throw new Error("An account with that email already exists. Try signing in.");
       const acct = newAccount(String(username || "").trim() || e.split("@")[0], e, password);
+      if (OWNER_EMAILS.includes(e)) grantOwner(acct);
       users[e] = acct;
       const tok = rnd(32); sessions[tok] = e;
       persist(); logRow({ action: "register", input: e });
@@ -460,6 +473,7 @@ const server = http.createServer(async (req, res) => {
       const acct = users[e];
       if (!acct) throw new Error("No account found with that email.");
       if (hashPassword(String(password || ""), acct.salt) !== acct.pass) throw new Error("Incorrect password.");
+      if (OWNER_EMAILS.includes(e) && !acct.owner) grantOwner(acct);
       const tok = rnd(32); sessions[tok] = e;
       persist();
       return json(res, 200, { ok: true, token: tok, user: publicUser(acct) });

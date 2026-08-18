@@ -395,14 +395,16 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
 .illumload{width:42px;height:42px;border-radius:12px;overflow:hidden;flex-shrink:0;animation:illumPulse 1.5s ease-in-out infinite;box-shadow:var(--shadow-sm)}
 .illumload svg{width:100%;height:100%;display:block}
 .loading-txt{font-size:13px;color:var(--muted)}
-@keyframes illumPulse{
-  0%{transform:rotate(0deg) scale(1)}
-  25%{transform:rotate(170deg) scale(.66)}
-  50%{transform:rotate(340deg) scale(1)}
-  75%{transform:rotate(510deg) scale(.7)}
-  100%{transform:rotate(680deg) scale(1)}
-}
-@media (prefers-reduced-motion:reduce){.illumload{animation:none}}
+/* Loader: only the star moves — the box stays still (less aggressive). */
+.loadbox{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#e89a58,#c2532f 55%,#8f3423);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow-sm)}
+.loadbox .starload{width:20px;height:20px;display:block;animation:starSpin 1.7s linear infinite}
+.starload svg{width:100%;height:100%;display:block}
+.starload svg path{transform-origin:center;animation:starPulse 1.7s ease-in-out infinite}
+@keyframes starSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes starPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.55;transform:scale(.7)}}
+@keyframes illumPulse{0%{transform:rotate(0deg) scale(1)}25%{transform:rotate(170deg) scale(.66)}50%{transform:rotate(340deg) scale(1)}75%{transform:rotate(510deg) scale(.7)}100%{transform:rotate(680deg) scale(1)}}
+@media (prefers-reduced-motion:reduce){.illumload,.loadbox .starload,.starload svg path{animation:none}}
+.own-tag{display:inline-flex;align-items:center;gap:4px;margin-left:7px;background:linear-gradient(135deg,#e8a058,#c2532f);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:999px}
 </style>
 </head>
 <body>
@@ -455,6 +457,8 @@ const LOGO = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
 <circle cx="20" cy="20" r="11" fill="#fff" opacity=".14"/>
 <path d="M20 10l2.1 7.9 7.9 2.1-7.9 2.1L20 30l-2.1-7.9L10 20l7.9-2.1z" fill="#fff"/>
 </svg>`;
+const STARL=`<svg viewBox="0 0 40 40"><path d="M20 10l2.1 7.9 7.9 2.1-7.9 2.1L20 30l-2.1-7.9L10 20l7.9-2.1z" fill="#fff"/></svg>`;
+const PAPERCLIP=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.49"/></svg>`;
 
 /* ============================================================
    2. STREAK — clean modern streak symbol (req 2)
@@ -669,7 +673,7 @@ function buildNav(){
 function renderAuth(){
   const b=document.getElementById("authBtn");
   if(S.user){
-    b.innerHTML=`<span class="av">${esc((S.user.username||S.user.email||"U")[0].toUpperCase())}</span>${esc(S.user.username||"Me")}`;
+    b.innerHTML=`<span class="av">${esc((S.user.username||S.user.email||"U")[0].toUpperCase())}</span>${esc(S.user.username||"Me")}${S.user.owner?`<span class="own-tag">Owner</span>`:""}`;
     b.style.background="var(--surface)"; b.style.color="var(--ink)"; b.style.borderColor="var(--line)";
     b.dataset.go="/profile";
   }else{
@@ -830,18 +834,20 @@ Draft a job application email for me…"></textarea>
    thinking, attachments, suggestions and the IllumAI loader.
    ============================================================ */
 const SUGG={
-  summarise:["Summarise this article into key points","Make a short TL;DR of this","Pull the 5 key takeaways","Summarise in 5 sentences or less"],
-  explain:["Explain this like I'm a beginner","What does this mean in simple terms?","Break this down step by step","Give me an analogy for this"],
-  rewrite:["Make this more professional","Rewrite this more warmly","Make it more concise","Improve the grammar and flow"],
-  organise:["Turn this into a clear task list","Organise into grouped notes","Make study cards from this","Clean up this messy text"],
-  draft:["Draft a thank-you email to a client","Draft a friendly announcement","Draft a job application email","Draft a follow-up message"]
+  summarise:["Summarise this into key points","Make it a short TL;DR","Pull the key takeaways"],
+  explain:["Explain this simply","What does this mean?","Break it down step by step"],
+  rewrite:["Make it more professional","Make it more concise","Fix the grammar and flow"],
+  organise:["Turn this into a task list","Make study cards from this","Clean up this text"],
+  draft:["Draft a thank-you email","Draft a job application","Draft a friendly announcement"],
+  chat:["Explain how this code works","Brainstorm blog post ideas","Write a social media caption","Plan my study schedule"]
 };
 const CHAT_WELCOME={
-  summarise:"I'll condense long text into its key points. Paste an article, paper or notes below (or attach a file), and I'll show my thinking, then give you the summary.",
-  explain:"I'll explain any concept simply — with an analogy and step-by-step build-up. Paste a passage below or attach a file.",
-  rewrite:"I'll rewrite any text into a clearer, better version in the tone you want. Paste the text below or attach a file.",
-  organise:"I'll turn messy notes into a clean task list, grouped notes and study cards. Paste them below or attach a file.",
-  draft:"I'll draft a polished email or message from a short brief. Tell me what you need below — or attach a document — and I'll write it."
+  summarise:"I'll condense any text into its key points. Paste it below.",
+  explain:"I'll make any idea simple to understand. Ask below.",
+  rewrite:"I'll rewrite your text into a cleaner, better version. Paste it below.",
+  organise:"I'll turn messy notes into clear tasks and cards. Paste them below.",
+  draft:"I'll draft a polished message from a short brief. Tell me what you need.",
+  chat:"Hi, I'm Illumini — ask me anything."
 };
 
 function chatTool(cfg){
@@ -849,18 +855,18 @@ function chatTool(cfg){
     <div class="chatview">
       <div class="head ch-head"><h1><span class="h-emoji">${cfg.e}</span>${cfg.n}</h1><p class="lede">${cfg.d}</p></div>
       <div class="chthread" id="tthread">
-        <div class="msg ai"><div class="av">${LOGO}</div><div class="b mutedb">${CHAT_WELCOME[cfg.mode]}</div></div>
+        <div class="msg ai"><div class="av">${LOGO}</div><div class="b mutedb">${CHAT_WELCOME[cfg.mode]||CHAT_WELCOME.chat}</div></div>
       </div>
       <div class="chbar">
         <div class="att-c" id="tattc"></div>
         <div class="ch-row">
-          <button class="attach" id="tatt" title="Attach a file">📎</button>
+          <button class="attach" id="tatt" title="Attach a file">${PAPERCLIP}</button>
           <textarea id="tin" rows="1" placeholder="${cfg.ph}"></textarea>
           <button class="btn btn-primary" id="tsnd">Send</button>
         </div>
         <div class="ch-new" id="tnew">＋ Start a new ${cfg.n} ➜</div>
         <div class="sug-wrap"><div class="sug-lb">Try these</div>
-          <div class="sug-chips" id="tsug">${SUGG[cfg.mode].map(s=>`<button class="sug" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
+          <div class="sug-chips" id="tsug">${(SUGG[cfg.mode]||SUGG.chat).map(s=>`<button class="sug" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
         </div>
       </div>
       <input type="file" id="tfile" class="hidden" multiple />
@@ -897,10 +903,10 @@ function chatMount(cfg){
     push("user",avUser+`<div class="b">${esc(text+(names.length?`\n\n📎 ${names.join(", ")}`:""))}</div>`);
     const history=msgs.slice();
     ta.value="";autoResize();
-    const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="illumload">${LOGO}</div><span class="loading-txt">Illumini is thinking…</span></div>`);
+    const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="loadbox"><div class="starload">${STARL}</div></div><span class="loading-txt">Illumini is thinking…</span></div>`);
     busy=true;
     try{
-      const res=await ai(content,MODES[cfg.mode]||"",history,SYS,cfg.mode);
+      const res=await ai(content,MODES[cfg.mode]||"",history,cfg.sys||SYS,cfg.mode);
       const ans=res?.result||"";const think=res?.thinking||"";
       msgs.push({role:"user",content});
       msgs.push({role:"assistant",content:ans});
@@ -912,11 +918,11 @@ function chatMount(cfg){
   }
 }
 const sel=function(o,opts){const arr=Array.isArray(opts)?opts:Array.prototype.slice.call(arguments,1);return `<select class="input" data-opt="${o}"><option value="">${o} — default</option>${arr.map(x=>`<option>${x}</option>`).join("")}</select>`;};
-P["/summarise"]=chatTool({n:"Text Summariser",e:"✂️",mode:"summarise",d:"Paste a long article, paper or meeting notes and get an instant summary, key takeaways and skimmable bullet points.",ph:"Paste or type the long text you want summarised…"});
-P["/explain"]=chatTool({n:"Explain",e:"💡",mode:"explain",d:"Understand complex topics with simple language, alternate examples and memorable metaphors.",ph:"Paste the concept or passage you want explained…"});
-P["/rewrite"]=chatTool({n:"Rewrite",e:"🖊️",mode:"rewrite",d:"Refine your writing into any tone with perfect clarity — while preserving your original meaning.",ph:"Paste the text you'd like rewritten…"});
-P["/organise"]=chatTool({n:"Organise",e:"🗂️",mode:"organise",d:"Turn messy notes and ideas into a clean task list, grouped notes and ready-to-study flashcards.",ph:"Paste your messy notes, meeting minutes or brain-dump…"});
-P["/draft"]=chatTool({n:"Draft",e:"✉️",mode:"draft",d:"Compose polished emails and messages from a simple brief — tell Illumini the type and tone and it will write it.",ph:"Describe what you need written. e.g. A thank-you email to a client named Sam…"});
+P["/summarise"]=chatTool({n:"Text Summariser",e:"✂️",mode:"summarise",d:"Condense any text into its key points.",ph:"Paste the long text you want summarised…"});
+P["/explain"]=chatTool({n:"Explain",e:"💡",mode:"explain",d:"Make any idea simple to understand.",ph:"Paste the concept you want explained…"});
+P["/rewrite"]=chatTool({n:"Rewrite",e:"🖊️",mode:"rewrite",d:"Polish any text into a clearer, better version.",ph:"Paste the text you'd like rewritten…"});
+P["/organise"]=chatTool({n:"Organise",e:"🗂️",mode:"organise",d:"Turn messy notes into clear tasks and cards.",ph:"Paste your messy notes or brain-dump…"});
+P["/draft"]=chatTool({n:"Draft",e:"✉️",mode:"draft",d:"Write a polished email or message from a brief.",ph:"Describe what you need written. e.g. A thank-you email to Sam…"});
 
 /* ---------- Templates ---------- */
 const TPL=[
@@ -956,25 +962,8 @@ P["/templates"]=()=>({title:"AI Writing Templates",html:`
   }
 });
 
-/* ---------- AI Chatbot (Pro Ultra+ — coming soon) ---------- */
-P["/chat"]=()=>({title:"AI Chatbot",html:`
-  <div class="head" style="text-align:center">
-    <div class="orb-stage" style="padding-top:34px">
-      <div style="width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:60px;background:var(--accent-soft);border:1px solid var(--accent-line)">💬</div>
-      <div class="orb-cap" style="margin-top:22px;font-size:15px">AI Chatbot</div>
-    </div>
-    <h1 style="justify-content:center;margin-top:8px">Run all your work in one place, freely.</h1>
-    <p class="lede" style="margin:14px auto 0">One powerful assistant for every task — write, plan, code, analyse, brainstorm and chat.
-      Ask anything, all in one place.</p>
-    <div class="chips" style="justify-content:center;margin-top:24px">
-      <span class="badge b-free">AI chatbot coming soon</span>
-    </div>
-    <p class="lede" style="margin:18px auto 0">The AI chatbot unlocks with the <b>Pro Ultra+</b> plan. We're building it — powered by OpenAI.</p>
-    <div class="chips" style="justify-content:center;margin-top:20px">
-      <button class="btn btn-ghost" data-go="/checkout?plan=proultraplus">See Pro Ultra+</button>
-      <button class="btn btn-ghost" data-go="/agent">Try Illumini now</button>
-    </div>
-  </div>`, mount(){}});
+/* ---------- AI Chatbot (Pro Ultra+) — live, powered by OpenAI ---------- */
+P["/chat"]=chatTool({n:"AI Chatbot",e:"💬",mode:"chat",sys:CHAT_SYS,d:"Ask anything — write, plan, code, analyse or just chat.",ph:"Message Illumini…"});
 
 /* ---------- AI Humanizer (req 7) — Coming Soon ---------- */
 P["/humanizer"]=()=>({title:"AI Humanizer",html:`
@@ -995,12 +984,11 @@ P["/humanizer"]=()=>({title:"AI Humanizer",html:`
 /* ---------- Source-Anchored Drafts (req 8, Pro) ---------- */
 P["/drafts"]=()=>{
   const pro=isPaid();
+  const DR_SUGG=["Explain how sleep, circadian rhythms and focus relate — as a one-page briefing.","Compare the pros of the Mediterranean vs the keto diet.","Explain how quantum computing generates electricity in simple terms.","Summarise the latest research on remote work productivity."];
   return{title:"Source-Anchored Drafts",html:`
   <div class="head">
     <h1><span class="h-emoji">🔗</span>Live Source-Anchored Drafts</h1>
-    <p class="lede">Drafts with inline, verifiable source anchors and a confidence meter — showing which sentences are
-      <b style="color:var(--ok)">✔︎ Sourced</b>, <b style="color:var(--warn)">~ Inferred</b> or <b style="color:var(--cre)">✶ Creative</b>.
-      Each anchor opens a citation card with a credibility score and Quick Verify.</p>
+    <p class="lede"><b style="color:var(--accent)">Exclusive to Source-Anchored Drafts.</b> Every claim in your draft is <b>checked against a real source</b> — tap any highlighted sentence to see exactly where it came from, with a credibility score and one-tap Verify. No more guessing. Your draft builds itself, <b style="color:var(--ok)">✔︎ Sourced</b> · <b style="color:var(--warn)">~ Inferred</b> · <b style="color:var(--cre)">✶ Creative</b>.</p>
   </div>
   ${pro?"":`<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
@@ -1012,6 +1000,7 @@ P["/drafts"]=()=>{
     <label class="lb" for="drin">Topic, prompt or paste your notes</label>
     <textarea class="textarea" id="drin" placeholder="e.g. Explain the relationship between sleep, circadian rhythms and focus — as a one-page briefing."></textarea>
     <div class="chips" style="margin-top:16px"><button class="btn btn-primary" id="drgo">✨ Generate anchored draft</button></div>
+    <div class="sug-wrap"><div class="sug-lb">Try these</div><div class="sug-chips" id="drsug">${DR_SUGG.map(s=>`<button class="sug" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div></div>
   </div>
   <div class="src-doc" style="margin-top:18px">
     <div class="src-main">
@@ -1029,6 +1018,7 @@ P["/drafts"]=()=>{
     const ta=document.getElementById("drin"),body=document.getElementById("drout"),
       meter=document.getElementById("confMeter"),citeL=document.getElementById("citeList"),citeC=document.getElementById("citeCount");
     let sources=[];
+    document.querySelectorAll("#drsug .sug").forEach(s=>s.onclick=()=>{ta.value=s.dataset.q;ta.focus()});
     document.getElementById("drgo").onclick=async()=>{
       const t=ta.value.trim(); if(!t)return toast("Enter a topic first.");
       if(!S.user||!isPaid()){toast("Source-Anchored Drafts are a Pro feature.");go("/checkout?plan=pro");return}
