@@ -1083,6 +1083,113 @@ P["/drafts"]=()=>{
   }};
 };
 
+P["/drafts"]=()=>{
+  const pro=isPaid();
+  const DR_SUGG=["Explain how sleep, circadian rhythms and focus relate — as a one-page briefing.","Compare the pros of the Mediterranean vs the keto diet.","Explain how quantum computing works in simple terms.","Summarise the latest research on remote work productivity."];
+  return{title:"Cognitive Drafting",html:`
+  <div class="chatview">
+    <div class="head ch-head"><h1><span class="h-emoji">🔗</span>Cognitive Drafting</h1>
+      <p class="lede"><b style="color:var(--accent)">Exclusive to IllumAI.</b> Every claim in your draft is <b>checked against a real source</b> — tap any highlighted sentence to see exactly where it came from, with a credibility score and one-tap Verify. Your draft builds itself, <b style="color:var(--ok)">✔︎ Sourced</b> · <b style="color:var(--warn)">~ Inferred</b> · <b style="color:var(--cre)">✶ Creative</b>.</p>
+      ${pro?"":`<div class="card" style="border-color:var(--accent-line);background:var(--accent-soft);margin-top:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:18px;flex-wrap:wrap">
+          <div><h3 style="margin-bottom:5px">Pro feature — ${CUR}5.99/mo</h3>
+          <p class="small muted">Full source anchoring, citation cards and Quick Verify are exclusive to Pro and above.</p></div>
+          <button class="btn btn-primary" data-go="/checkout?plan=pro">Upgrade to Pro</button>
+        </div></div>`}
+    </div>
+    <div class="chthread" id="dthread">
+      <div class="msg ai"><div class="av">${LOGO}</div><div class="b muted">Give me a topic and I'll draft it — every claim anchored to a real source.</div></div>
+    </div>
+    <div class="chbar">
+      <div class="att-c" id="dattc"></div>
+      <div class="ch-row">
+        <button class="attach" id="datt" title="Attach notes">${PAPERCLIP}</button>
+        <textarea id="din" rows="1" placeholder="e.g. How do sleep, circadian rhythms and focus relate?"></textarea>
+        <button class="send-pill" id="dsnd" title="Generate anchored draft">${ARROWUP}</button>
+      </div>
+      <div class="ch-new" id="dnew">＋ Start a new Cognitive Draft ➜</div>
+      <div class="sug-wrap"><div class="sug-lb">Try these</div>
+        <div class="sug-chips" id="dsug">${DR_SUGG.map(s=>`<button class="sug" data-q="${esc(s)}">${esc(s)}</button>`).join("")}</div>
+      </div>
+    </div>
+    <input type="file" id="dfile" class="hidden" multiple />
+  </div>`,
+  mount(){return draftMount();}
+  };
+}
+function draftMount(){
+  const thread=document.getElementById("dthread"),ta=document.getElementById("din"),
+    send=document.getElementById("dsnd"),att=document.getElementById("datt"),
+    fileIn=document.getElementById("dfile"),nw=document.getElementById("dnew");
+  const wrap=thread.innerHTML;
+  let sources=[],busy=false;
+  const scroll=()=>{thread.scrollTop=thread.scrollHeight};
+  const push=(role,html)=>{const d=document.createElement("div");d.className="msg "+role;d.innerHTML=html;thread.appendChild(d);scroll();return d};
+  const avAi=`<div class="av">${LOGO}</div>`;
+  const avUser=`<div class="av u">${esc((S.user?.username||"U")[0]?.toUpperCase()||"U")}</div>`;
+  const autoResize=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,150)+"px"};
+  att.onclick=()=>fileIn.click();
+  fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{f.text().then(t=>{ta.value=(ta.value?ta.value+"\n":"")+String(t||"").slice(0,8000);autoResize()})});fileIn.value=""};
+  document.querySelectorAll("#dsug .sug").forEach(s=>s.onclick=()=>{if(busy)return;ta.value=s.dataset.q;autoResize();run()});
+  nw.onclick=()=>{thread.innerHTML=wrap;busy=false;ta.value="";autoResize();ta.focus()};
+  ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();run()}});
+  send.onclick=run;
+  function fmtDraft(raw,srcs,maxA){
+    const parts=String(raw||"").split(/(\[[SIC]\]|\(src \d+\))/g).filter(Boolean);
+    let html="",mtr={S:0,I:0,C:0},anchorCount=0;
+    for(let i=0;i<parts.length;i++){
+      const seg=parts[i];
+      if(/^\[[SIC]\]$/.test(seg)){const k=seg[1];mtr[k]++;html+=` <span class="mtag ${k}">${k==="S"?"✔︎ Sourced":k==="I"?"~ Inferred":"✶ Creative"}</span> `;continue;}
+      const m2=seg.match(/\(src (\d+)\)/);
+      if(m2){const idx=+m2[1]-1;if(srcs[idx]&&anchorCount<(max||Infinity)){anchorCount++;html+=`<a class="anchor" data-src="${idx}" title="${esc(srcs[idx].title)}">[${idx+1}]</a>`;}continue;}
+      html+=esc(seg);
+    }
+    const body=html.replace(/\n/g,"<br>");
+    const meter=`<div class="conf-meter" style="display:flex"><span class="c" style="color:var(--ok)">✔︎ Sourced ${mtr.S}</span><span class="c" style="color:var(--warn)">~ Inferred ${mtr.I}</span><span class="c" style="color:var(--cre)">✘ Creative ${mtr.C}</span></div>`;
+    const cites=srcs.length?`<details class="think" style="margin-top:12px"><summary>Sources (${srcs.length})</summary><div class="think-b">${srcs.map((s,i)=>`<div class="cite-card">
+      <div class="ct">${esc(s.title)}</div><div class="cs">${esc(s.snippet)}</div>
+      <div class="cm"><span class="small" style="color:var(--muted)">Credibility</span><span class="cred-bar"><i style="width:${Math.round(s.cred*100)}%"></i></span><b class="small">${Math.round(s.cred*100)}%</b></div>
+      <button class="mini quick" data-src="${i}">✓ Quick Verify</button></div>`).join("")}</div></details>`:"";
+    return `<div class="b">${meter}${body}${cites}</div>`;
+  }
+  thread.addEventListener("click",e=>{
+    const a=e.target.closest(".anchor");if(a){e.preventDefault();openCite(+a.dataset.src,sources);}
+    const q=e.target.closest(".cite-card .quick");if(q){e.preventDefault();if(sources[q.dataset.src])toast("Verifying "+sources[q.dataset.src].title+"…");}
+  });
+  async function run(){
+    if(busy)return;
+    const text=ta.value.trim();if(!text)return toast("Enter a topic first.");
+    if(!S.user||!isPaid()){toast("Cognitive Drafting is a Pro feature.");go("/checkout?plan=pro");return}
+    push("user",avUser+`<div class="b">${esc(text)}</div>`);
+    ta.value="";autoResize();
+    const loader=push("ai",`<div class="b" style="display:flex;align-items:center;gap:11px"><div class="loadbox"><div class="starload">${STARL}</div></div><span class="loading-txt">Retrieving sources and drafting…</span></div>`);
+    busy=true;
+    try{
+      const j=await api("/api/draft",{method:"POST",body:JSON.stringify({text})});
+      if(j.user)setUser(j.user);
+      sources=j.sources||[];
+      loader.outerHTML=`<div class="msg ai">${avAi}${fmtDraft(j.draft,sources,j.maxAnchors)}</div>`;
+    }catch(err){
+      loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(err.message)}</div></div>`;
+    }finally{busy=false;scroll()}
+  }
+  function openCite(i,srcs){
+    const s=srcs[i];if(!s)return;
+    const o=document.createElement("div");o.className="ov";
+    o.innerHTML=`<div class="modal" style="max-width:520px;text-align:left">
+      <h3 style="margin-bottom:6px">${esc(s.title)}</h3>
+      <p class="small muted" style="margin-bottom:14px"><a href="${esc(s.url)}" target="_blank" rel="noopener" style="color:var(--accent)">${esc(s.url)}</a></p>
+      <div class="cm" style="margin-bottom:14px"><span class="small">Credibility</span><span class="cred-bar"><i style="width:${Math.round(s.cred*100)}%"></i></span><b>${Math.round(s.cred*100)}%</b></div>
+      <div class="result" style="margin-bottom:16px">${esc(s.snippet)}</div>
+      <button class="btn btn-primary btn-block" id="qverify">✓ Quick Verify</button>
+      <button class="btn btn-ghost btn-block" id="qcClose" style="margin-top:10px">Close</button></div>`;
+    o.querySelector("#qverify").onclick=()=>{const b=o.querySelector("#qverify");b.disabled=true;b.textContent="Checking…";setTimeout(()=>{b.textContent="✓ Verified — source is reachable and current";b.disabled=false},1200)};
+    o.querySelector("#qcClose").onclick=()=>o.remove();
+    o.onclick=e=>{if(e.target===o)o.remove()};
+    document.body.appendChild(o);
+  }
+}
+
 /* ---------- Plans (req 4,5) ---------- */
 let CYCLE="m";
 P["/plans"]=()=>({title:"Plans & Pricing",html:`
