@@ -94,9 +94,10 @@ const OLLAMA_KEY = process.env.OLLAMA_API_KEY || process.env.ILU_OLLAMA || "";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.1";
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
 const HF_KEY = process.env.HF_API_KEY || process.env.HF_TOKEN || process.env.ILU_HF || "";
-const HF_MODEL = process.env.HF_MODEL || "meta-llama/Llama-3.1-8B-Instruct";
-const HF_URL = `https://api-inference.huggingface.co/models/${HF_MODEL}`;
-const _PROVIDERS=[["hf",HF_KEY],["glm",GLM_KEY],["cohere",COHERE_KEY],["deepseek",DEEPSEEK_KEY],["ollama",OLLAMA_BASE],["openai",OPENAI_KEY]];
+const HF_MODEL = process.env.HF_MODEL || "meta-llama/Llama-3.1-8B-Instruct"; // primary
+const HF_MODEL2 = process.env.HF_MODEL_FALLBACK || "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"; // fallback
+const HF_URL = (m) => `https://api-inference.huggingface.co/models/${m}`;
+const _PROVIDERS=[["hf",HF_KEY]]; // free Hugging Face models only
 const _CONF=_PROVIDERS.filter(p=>p[1]);
 const PROVIDER = (process.env.AI_PROVIDER || (_CONF.length>1?"route":_CONF[0]?_CONF[0][0]:"local")).toLowerCase();
 const GLM_MODEL = process.env.GLM_MODEL || "glm-5.2";
@@ -190,19 +191,26 @@ async function callHF(messages, temperature) {
   const sys = messages.find((m) => m.role === "system")?.content || "";
   const user = [...messages].reverse().find((m) => m.role === "user")?.content || "";
   const inputs = `${sys}\n\n${user}`.trim();
-  const r = await fetch(HF_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${HF_KEY}` },
-    body: JSON.stringify({ inputs, parameters: { max_new_tokens: 900, temperature } }),
-    signal: AbortSignal.timeout(45000),
-  });
-  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`HuggingFace ${r.status}: ${t.slice(0, 160)}`); }
-  const j = await r.json();
-  const arr = Array.isArray(j) ? j : [j];
-  let raw = arr[0]?.generated_text || arr[0]?.text || "";
-  if (raw && inputs && raw.startsWith(inputs)) raw = raw.slice(inputs.length).trim();
-  if (!raw) throw new Error("Hugging Face returned an empty response");
-  return raw.trim();
+  const models = [[HF_MODEL, "llama3.1"], [HF_MODEL2, "deepseek"]];
+  let lastErr;
+  for (const [model, providerName] of models) {
+    try {
+      const r = await fetch(HF_URL(model), {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${HF_KEY}` },
+        body: JSON.stringify({ inputs, parameters: { max_new_tokens: 900, temperature } }),
+        signal: AbortSignal.timeout(50000),
+      });
+      if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`HF ${r.status}: ${t.slice(0, 90)}`); }
+      const j = await r.json();
+      const arr = Array.isArray(j) ? j : [j];
+      let raw = arr[0]?.generated_text || arr[0]?.text || "";
+      if (raw && inputs && raw.startsWith(inputs)) raw = raw.slice(inputs.length).trim();
+      if (!raw) throw new Error("empty response");
+      return { provider: providerName, text: raw.trim() };
+    } catch (e) { lastErr = e; console.warn("[hf]", providerName, "failed, trying fallback:", e.message); }
+  }
+  throw new Error("Hugging Face models unavailable: " + (lastErr?.message || ""));
 }
 function buildMessages({ systemPrompt, userMessage, modePrompt = "", history = [] }) {
   let system = (systemPrompt || "");
@@ -300,7 +308,7 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
   const callers = {
     glm: () => callGlm(messages, temp).then((result) => ({ provider: "glm", model: GLM_MODEL, result })),
     cohere: () => callCohere(messages, temp).then((result) => ({ provider: "cohere", model: COHERE_MODEL, result })),
-    hf: () => callHF(messages, temp).then((result) => ({ provider: "huggingface", model: HF_MODEL, result })),
+    hf: async () => { const { provider, text } = await callHF(messages, temp); return { provider, model: provider === "llama3.1" ? HF_MODEL : HF_MODEL2, result: text }; },
     deepseek: () => callDeepSeek(messages, temp).then((result) => ({ provider: "deepseek", model: DEEPSEEK_MODEL, result })),
     ollama: () => callOllama(messages, temp).then((result) => ({ provider: "ollama", model: OLLAMA_MODEL, result })),
     openai: () => callOpenAI(messages, temp).then((result) => ({ provider: "openai", model: OPENAI_MODEL, result })),
@@ -531,7 +539,7 @@ const server = http.createServer(async (req, res) => {
   const u = getAuthUser(req);
 
   if (P === "/api/health") {
-    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!(HF_KEY || GLM_KEY || COHERE_KEY || DEEPSEEK_KEY || OLLAMA_BASE || OPENAI_KEY), hf: !!HF_KEY, glm: !!GLM_KEY, cohere: !!COHERE_KEY, deepseek: !!DEEPSEEK_KEY, ollama: !!OLLAMA_BASE, openai: !!OPENAI_KEY, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
+    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!HF_KEY, hf: !!HF_KEY, model: HF_MODEL, fallback: HF_MODEL2, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
   }
 
   /* ---------- Auth ---------- */
@@ -620,6 +628,34 @@ const server = http.createServer(async (req, res) => {
       logRow({ action: "illumination", input: userText, output: result, meta: { provider, model: usedModel, user: u.email, mode: effMode } });
       return json(res, 200, { ok: true, result, thinking, provider, mode: effMode, user: publicUser(u) });
     } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
+  }
+
+  /* ---------- AI Chatbot streaming (Hugging Face, word-by-word) ---------- */
+  if (P === "/api/ai/stream" && req.method === "POST") {
+    if (!u) return json(res, 401, { ok: false, error: "Not signed in" });
+    res.writeHead(200, { "Content-Type": "application/x-ndjson; charset=utf-8", "Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive" });
+    const send = (obj) => { try { res.write(JSON.stringify(obj) + "\n"); } catch (e) {} };
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    (async () => {
+      try {
+        const { systemPrompt, userText, modePrompt, history } = JSON.parse(await readBody(req));
+        if (!userText || !String(userText).trim()) throw new Error("No input text provided.");
+        if (u.plan === "free" && (u.credits || 0) <= 0) throw Object.assign(new Error("You're out of illuminations. Top up or upgrade."), { code: "NO_CREDITS" });
+        refreshUsage(u);
+        if (u.plan !== "free") { const cap = PLAN_CAP[u.plan]; if (cap !== Infinity && (u.usage?.used || 0) >= cap) throw new Error(`You've used all ${cap} illuminations for this billing cycle.`); }
+        consume(u); tickStreak(u); saveStore(USERS_FILE, users);
+        const msgs = buildMessages({ systemPrompt: systemPrompt || "", userMessage: userText, modePrompt: modePrompt || "", history: history || [] });
+        const { provider, text } = await callHF(msgs, 0.6);
+        send({ provider });
+        const tokens = String(text).match(/\S+\s*/g) || [String(text)];
+        for (const t of tokens) { if (!t) continue; send({ text: t }); await sleep(28); }
+        send({ user: publicUser(u) });
+        send({ end: true });
+        logRow({ action: "illumination", input: userText, output: text, meta: { provider, user: u.email } });
+      } catch (e) { send({ error: e.message, code: e.code }); }
+      finally { try { res.end(); } catch (e) {} }
+    })();
+    return;
   }
 
   /* ---------- Source-Anchored Drafts (Pro) ---------- */
@@ -718,7 +754,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log(`\n  ✨ IllumAI v5 running → http://localhost:${PORT}`);
-  console.log(`  AI provider: ${PROVIDER}  |  key ${(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY) ? "configured ✓" : "demo mode (set GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY)"}`);
-  console.log(`  Models — HuggingFace: ${HF_KEY ? HF_MODEL : "—"} · GLM: ${GLM_KEY ? GLM_MODEL : "—"} · Cohere: ${COHERE_KEY ? COHERE_MODEL : "—"} · DeepSeek: ${DEEPSEEK_KEY ? DEEPSEEK_MODEL : "—"} · Ollama: ${OLLAMA_BASE ? OLLAMA_MODEL : "—"} · OpenAI: ${OPENAI_KEY ? OPENAI_MODEL : "—"}`);
+  console.log(`  AI provider: HuggingFace  |  key ${HF_KEY ? "configured ✓" : "MISSING (set HF_API_KEY)"}`);
+  console.log(`  Models — primary: ${HF_KEY ? HF_MODEL : "—"} · fallback: ${HF_KEY ? HF_MODEL2 : "—"}`);
   console.log(`  Accounts: ${Object.keys(users).length}  |  data → ${DATA_DIR}`);
 });

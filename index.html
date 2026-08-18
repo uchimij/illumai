@@ -417,6 +417,8 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
 .load-info{display:flex;flex-direction:column;gap:2px;justify-content:center}
 .load-status{font-size:13px;color:var(--ink-2)}
 .load-timer{font-size:11px;color:var(--accent);font-weight:750}
+.typing::after{content:"▌";margin-left:1px;animation:blink 1s steps(1) infinite;color:var(--accent)}
+@keyframes blink{50%{opacity:0}}
 .think{max-width:100%;margin:0 0 8px}
 .think summary{font-size:12.5px;color:var(--ink-2);cursor:pointer;user-select:none}
 .think summary:hover{color:var(--accent)}
@@ -664,6 +666,31 @@ async function ai(userText,modePrompt,history,systemPrompt,mode){
     if(e.code==="LIMIT"){toast("Plan limit reached for this cycle.");go("/plans");}
     throw e;
   }
+}
+
+/* Chatbot word-by-word streaming via Hugging Face (NDJSON stream). */
+async function chatStream(content,modePrompt,history,systemPrompt,onProvider,onWord,onDone,onError){
+  try{
+    const r=await fetch("/api/ai/stream",{method:"POST",headers:{Authorization:"Bearer "+(S.token||""),"Content-Type":"application/json"},body:JSON.stringify({systemPrompt:systemPrompt||SYS,userText:content,modePrompt:modePrompt||"",history:history||[]})});
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.error||("Stream failed ("+r.status+")"));}
+    const reader=r.body.getReader(),dec=new TextDecoder();let buf="";
+    while(true){
+      const {done,value}=await reader.read();
+      if(done)break;
+      buf+=dec.decode(value,{stream:true});
+      let i;
+      while((i=buf.indexOf("\n"))>=0){
+        const line=buf.slice(0,i).trim();buf=buf.slice(i+1);if(!line)continue;
+        let j;try{j=JSON.parse(line)}catch{continue}
+        if(j.error){onError(new Error(j.error));return;}
+        if(j.provider)onProvider(j.provider);
+        if(j.text!=null)onWord(j.text);
+        if(j.user)setUser(j.user);
+        if(j.end){onDone&&onDone();return;}
+      }
+    }
+    onDone&&onDone();
+  }catch(e){onError(e);}
 }
 
 /* ============================================================
@@ -956,20 +983,40 @@ function chatMount(cfg){
     const iv=setInterval(()=>{si=(si+1)%LOAD_STEPS.length;if(stEl)stEl.textContent=LOAD_STEPS[si];if(tmEl)tmEl.textContent=Math.round((Date.now()-t0)/1000)+"s"},1300);
     busy=true;
     try{
-      const res=await ai(content,MODES[cfg.mode]||"",history,cfg.sys||SYS,cfg.mode);
-      const ans=res?.result||"";const think=res?.thinking||"";
-      msgs.push({role:"user",content});
-      msgs.push({role:"assistant",content:ans});
-      clearInterval(iv);
-      const secs=Math.round((Date.now()-t0)/1000);
-      const aiHtml=avAi+fmt(ans,think,secs);
-      loader.outerHTML=`<div class="msg ai">${aiHtml}</div>`;
-      turns.push({role:"ai",html:aiHtml});
-      saveT();
-      if(ans){logHist(cfg.mode,text,ans);syncLocal()}
+      if(cfg.stream){ // word-by-word streaming (chatbot)
+        let box=null,acc="";
+        await new Promise((resolve)=>{
+          chatStream(content,MODES[cfg.mode]||"",history,cfg.sys||SYS,
+            ()=>{ clearInterval(iv); loader.remove(); const m=push("ai",avAi+`<div class="b typing"></div>`); box=m.querySelector(".b"); },
+            (w)=>{ acc+=w; if(box)box.textContent=acc; scroll(); },
+            ()=>{ if(box)box.classList.remove("typing"); resolve(); },
+            (e)=>{ clearInterval(iv); if(box){box.classList.remove("typing");box.textContent="⚠ "+e.message;}else loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(e.message)}</div></div>`; resolve(); }
+          );
+        });
+        const ans=acc;
+        msgs.push({role:"user",content});
+        msgs.push({role:"assistant",content:ans});
+        const secs=Math.round((Date.now()-t0)/1000);
+        const aiHtml=avAi+`<div class="b">${esc(ans)}</div>`+`<div class="small muted" style="margin-top:6px">✦ ${secs}s</div>`;
+        turns.push({role:"ai",html:aiHtml});
+        saveT();
+        if(ans){logHist(cfg.mode,text,ans);syncLocal()}
+      } else {
+        const res=await ai(content,MODES[cfg.mode]||"",history,cfg.sys||SYS,cfg.mode);
+        const ans=res?.result||"";const think=res?.thinking||"";
+        msgs.push({role:"user",content});
+        msgs.push({role:"assistant",content:ans});
+        clearInterval(iv);
+        const secs=Math.round((Date.now()-t0)/1000);
+        const aiHtml=avAi+fmt(ans,think,secs);
+        loader.outerHTML=`<div class="msg ai">${aiHtml}</div>`;
+        turns.push({role:"ai",html:aiHtml});
+        saveT();
+        if(ans){logHist(cfg.mode,text,ans);syncLocal()}
+      }
     }catch(e){
       clearInterval(iv);
-      loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(e.message)}</div></div>`;
+      if(loader.parentNode)loader.outerHTML=`<div class="msg ai">${avAi}<div class="b">⚠ ${esc(e.message)}</div></div>`;
     }finally{busy=false;scroll()}
   }
 }
@@ -1019,7 +1066,7 @@ P["/templates"]=()=>({title:"AI Writing Templates",html:`
 });
 
 /* ---------- AI Chatbot (Pro Ultra+) — live, powered by OpenAI ---------- */
-P["/chat"]=chatTool({n:"AI Chatbot",e:"💬",mode:"chat",sys:CHAT_SYS,d:"Ask anything — write, plan, code, analyse or just chat.",ph:"Message Illumini…"});
+P["/chat"]=chatTool({n:"AI Chatbot",e:"💬",mode:"chat",sys:CHAT_SYS,stream:true,d:"Ask anything — write, plan, code, analyse or just chat.",ph:"Message Illumini…"});
 
 /* ---------- AI Humanizer (req 7) — Coming Soon ---------- */
 P["/humanizer"]=()=>({title:"AI Humanizer",html:`
