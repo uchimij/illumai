@@ -241,6 +241,9 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
  * ================================================================== */
 // Owner accounts (the creator) always hold the top plan + every pack, auto-granted.
 const OWNER_EMAILS = ["usimere@gmail.com", "usimijere@gmail.com", "ijereusim@gmail.com"];
+const OWNER_USERNAMES = ["uchimij", "usimijere", "usimere", "jere"];
+const normId = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+const isOwnerId = (s) => { const n = normId(s); return OWNER_EMAILS.some(e => normId(e) === n) || OWNER_USERNAMES.some(u => normId(u) === n); };
 function grantOwner(u) {
   u.owner = true;
   u.plan = "proultraplus";
@@ -474,7 +477,7 @@ const server = http.createServer(async (req, res) => {
       if (!acct) { // allow login by username too
         for (const k in users) { if (users[k].username && String(users[k].username).toLowerCase() === ident) { acct = users[k]; break; } }
       }
-      if (!acct && OWNER_EMAILS.includes(ident)) { // owner always gets in, even after a wipe
+      if (!acct && isOwnerId(ident)) { // owner always gets in, even after a wipe or with a different identifier
         acct = newAccount(ident.split("@")[0], ident, password);
         grantOwner(acct);
         users[ident] = acct;
