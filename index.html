@@ -1307,15 +1307,15 @@ P["/auth"]=()=>({title:"Sign in",html:`
       <button class="${authMode==="signup"?"active":""}" data-am="signup">Sign up</button>
     </div>
     <div class="card">
-      <label class="lb" for="ae">Email</label>
-      <input class="input" id="ae" type="email" placeholder="you@example.com" autocomplete="email" />
-      ${authMode==="signup"?`<div style="height:15px"></div><label class="lb" for="an">Username</label><input class="input" id="an" placeholder="Choose a username" autocomplete="username" />`:""}
+      <label class="lb" for="ae">Email or username</label>
+      <input class="input" id="ae" placeholder="you@example.com" autocomplete="username" />
+      ${authMode==="signup"?`<div style="height:15px"></div><label class="lb" for="an">Username <span class="small muted">(shown on your profile — optional)</span></label><input class="input" id="an" placeholder="e.g. jere" autocomplete="nickname" />`:""}
       <div style="height:15px"></div>
       <label class="lb" for="ap">Password</label>
       <input class="input" id="ap" type="password" placeholder="••••••••" autocomplete="current-password" />
       <div style="height:20px"></div>
       <button class="btn btn-primary btn-block" id="asub">${authMode==="login"?"Sign in":"Create account & start"}</button>
-      <p class="small muted" style="text-align:center;margin-top:14px">Your account, Vault, streak and purchases are saved and synced.</p>
+      <p class="small muted" style="text-align:center;margin-top:14px">${authMode==="login"?"Use the email or username you signed up with.":"Your account, Vault, streak and purchases are saved and synced."}</p>
     </div>
   </div>`,
   mount(){

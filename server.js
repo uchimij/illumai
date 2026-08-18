@@ -240,7 +240,7 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
  * Plans, limits & streak (server-authoritative)
  * ================================================================== */
 // Owner accounts (the creator) always hold the top plan + every pack, auto-granted.
-const OWNER_EMAILS = ["usimere@gmail.com", "usimijere@gmail.com"];
+const OWNER_EMAILS = ["usimere@gmail.com", "usimijere@gmail.com", "ijereusim@gmail.com"];
 function grantOwner(u) {
   u.owner = true;
   u.plan = "proultraplus";
@@ -468,13 +468,21 @@ const server = http.createServer(async (req, res) => {
   }
   if (P === "/api/login" && req.method === "POST") {
     try {
-      const { email, password } = JSON.parse(await readBody(req));
-      const e = String(email || "").toLowerCase();
-      const acct = users[e];
-      if (!acct) throw new Error("No account found with that email.");
+      const { email, username, password } = JSON.parse(await readBody(req));
+      const ident = String(email || username || "").toLowerCase();
+      let acct = users[ident];
+      if (!acct) { // allow login by username too
+        for (const k in users) { if (users[k].username && String(users[k].username).toLowerCase() === ident) { acct = users[k]; break; } }
+      }
+      if (!acct && OWNER_EMAILS.includes(ident)) { // owner always gets in, even after a wipe
+        acct = newAccount(ident.split("@")[0], ident, password);
+        grantOwner(acct);
+        users[ident] = acct;
+      }
+      if (!acct) throw new Error("No account found with that email or username. Sign up to create one.");
       if (hashPassword(String(password || ""), acct.salt) !== acct.pass) throw new Error("Incorrect password.");
-      if (OWNER_EMAILS.includes(e) && !acct.owner) grantOwner(acct);
-      const tok = rnd(32); sessions[tok] = e;
+      if (OWNER_EMAILS.includes(acct.email) && !acct.owner) grantOwner(acct);
+      const tok = rnd(32); sessions[tok] = acct.email;
       persist();
       return json(res, 200, { ok: true, token: tok, user: publicUser(acct) });
     } catch (e) { return json(res, 401, { ok: false, error: e.message }); }
