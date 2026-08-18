@@ -88,8 +88,11 @@ function yesterday() { return dateStr(Date.now() - 864e5); }
 const GLM_KEY = process.env.GLM_API_KEY || process.env.ILU_GLM || "";
 const COHERE_KEY = process.env.COHERE_API_KEY || process.env.ILLUMAI || process.env.ILU_COHERE || "";
 const DEEPSEEK_KEY = process.env.DEEPSEEK_API_KEY || process.env.ILU_DEEPSEEK || process.env.ILU_OPENAI || "";
-const PROVIDER = (process.env.AI_PROVIDER ||
-  (GLM_KEY && COHERE_KEY ? "route" : GLM_KEY ? "glm" : COHERE_KEY ? "cohere" : DEEPSEEK_KEY ? "deepseek" : "local")).toLowerCase();
+const OLLAMA_BASE = process.env.OLLAMA_BASE_URL || process.env.OLLAMA_HOST || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.1";
+const _PROVIDERS=[["glm",GLM_KEY],["cohere",COHERE_KEY],["deepseek",DEEPSEEK_KEY],["ollama",OLLAMA_BASE]];
+const _CONF=_PROVIDERS.filter(p=>p[1]);
+const PROVIDER = (process.env.AI_PROVIDER || (_CONF.length>1?"route":_CONF[0]?_CONF[0][0]:"local")).toLowerCase();
 const GLM_MODEL = process.env.GLM_MODEL || "glm-5.2";
 const GLM_URL = process.env.GLM_API_URL || "https://open.bigmodel.cn/api/paas/v4/chat/completions";
 const COHERE_MODEL = process.env.ILLUMAI_MODEL || "command-r-plus-08-2024";
@@ -146,6 +149,20 @@ async function callDeepSeek(messages, temperature) {
   return out.trim();
 }
 
+async function callOllama(messages, temperature) {
+  if (!OLLAMA_BASE) throw new Error("Ollama not configured (OLLAMA_BASE_URL)");
+  const r = await fetch(`${OLLAMA_BASE}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: OLLAMA_MODEL, messages, stream: false, options: { temperature } }),
+    signal: AbortSignal.timeout(25000),
+  });
+  if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`Ollama ${r.status}: ${t.slice(0, 300)}`); }
+  const j = await r.json();
+  const out = j?.message?.content || "";
+  if (!out) throw new Error("Ollama returned an empty response");
+  return out.trim();
+}
 function buildMessages({ systemPrompt, userMessage, modePrompt = "", history = [] }) {
   let system = (systemPrompt || "");
   if (modePrompt && !/MODE:/.test(system)) system = `${system}\n\n${modePrompt}`;
@@ -192,15 +209,17 @@ function localRespond(messages) {
   return `Here is Illumini's clarity output for: "${snip}"\n\n**Key takeaways**\n• We handled this as a "${mode}" task.\n• Every key fact from the source is preserved.\n• Use Copy to save it, or Save to Vault to keep it forever.\n\n(⚙ Demo responder active — set GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY for live AI.)`;
 }
 
-const PROVIDERS = { glm: GLM_KEY, cohere: COHERE_KEY, deepseek: DEEPSEEK_KEY };
+const PROVIDERS = { glm: GLM_KEY, cohere: COHERE_KEY, deepseek: DEEPSEEK_KEY, ollama: OLLAMA_BASE };
 function orderFor(mode) {
   if (PROVIDER === "glm") return ["glm"];
   if (PROVIDER === "cohere") return ["cohere"];
   if (PROVIDER === "deepseek") return ["deepseek"];
+  if (PROVIDER === "ollama") return ["ollama"];
   const avail = Object.keys(PROVIDERS).filter((p) => PROVIDERS[p]);
   const pref = providerFor(mode);
   const order = [pref, ...avail.filter((p) => p !== pref)];
-  if (avail.includes("cohere")) order.unshift("cohere"); // reliable key first = faster responses
+  if (avail.includes("cohere")) order.unshift("cohere");
+  if (avail.includes("ollama")) order.unshift("ollama"); // Ollama (local) is the preferred provider
   return [...new Set(order)];
 }
 // Ask the model to reason first, then answer — so Illumini can show its thought process.
@@ -229,6 +248,7 @@ async function runAI({ systemPrompt, userText, modePrompt = "", model = "", hist
     glm: () => callGlm(messages, temp).then((result) => ({ provider: "glm", model: GLM_MODEL, result })),
     cohere: () => callCohere(messages, temp).then((result) => ({ provider: "cohere", model: COHERE_MODEL, result })),
     deepseek: () => callDeepSeek(messages, temp).then((result) => ({ provider: "deepseek", model: DEEPSEEK_MODEL, result })),
+    ollama: () => callOllama(messages, temp).then((result) => ({ provider: "ollama", model: OLLAMA_MODEL, result })),
   };
   let lastErr;
   for (const p of orderFor(effMode)) {
@@ -456,7 +476,7 @@ const server = http.createServer(async (req, res) => {
   const u = getAuthUser(req);
 
   if (P === "/api/health") {
-    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY), glm: !!GLM_KEY, cohere: !!COHERE_KEY, deepseek: !!DEEPSEEK_KEY, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
+    return json(res, 200, { ok: true, provider: PROVIDER, keyConfigured: !!(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY || OLLAMA_BASE), glm: !!GLM_KEY, cohere: !!COHERE_KEY, deepseek: !!DEEPSEEK_KEY, ollama: !!OLLAMA_BASE, stripe: !!STRIPE_KEY, currency: CURRENCY, users: Object.keys(users).length, dbRows: history.length });
   }
 
   /* ---------- Auth ---------- */
@@ -644,6 +664,6 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`\n  ✨ IllumAI v5 running → http://localhost:${PORT}`);
   console.log(`  AI provider: ${PROVIDER}  |  key ${(GLM_KEY || COHERE_KEY || DEEPSEEK_KEY) ? "configured ✓" : "demo mode (set GLM_API_KEY, ILLUMAI, or DEEPSEEK_API_KEY)"}`);
-  console.log(`  Models — GLM: ${GLM_KEY ? GLM_MODEL : "—"} · Cohere: ${COHERE_KEY ? COHERE_MODEL : "—"} · DeepSeek: ${DEEPSEEK_KEY ? DEEPSEEK_MODEL : "—"}`);
+  console.log(`  Models — GLM: ${GLM_KEY ? GLM_MODEL : "—"} · Cohere: ${COHERE_KEY ? COHERE_MODEL : "—"} · DeepSeek: ${DEEPSEEK_KEY ? DEEPSEEK_MODEL : "—"} · Ollama: ${OLLAMA_BASE ? OLLAMA_MODEL : "—"}`);
   console.log(`  Accounts: ${Object.keys(users).length}  |  data → ${DATA_DIR}`);
 });
