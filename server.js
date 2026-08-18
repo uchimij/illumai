@@ -236,6 +236,13 @@ function orderFor(mode) {
   if (PROVIDER === "ollama") return ["ollama"];
   if (PROVIDER === "openai") return ["openai"];
   const avail = Object.keys(PROVIDERS).filter((p) => PROVIDERS[p]);
+  if (/(chat|auto)/i.test(mode || "")) { // Chatbot: Ollama first, OpenAI as last resort
+    const o=[];
+    if (avail.includes("ollama")) o.push("ollama");
+    if (avail.includes("openai")) o.push("openai");
+    o.push(...avail.filter(a=>a!=="ollama"&&a!=="openai"));
+    return [...new Set(o)];
+  }
   const pref = providerFor(mode);
   const order = [pref, ...avail.filter((p) => p !== pref)];
   if (avail.includes("cohere")) order.unshift("cohere");
