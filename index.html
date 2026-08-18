@@ -619,7 +619,8 @@ const MODES={
   explain:`MODE: EXPLAIN.\nExplain so a beginner truly understands. Define jargon, give one memorable analogy, and build up step by step. Sections: introduction, main ideas, examples, conclusion.`,
   rewrite:`MODE: REWRITE.\nRewrite in the chosen tone, preserving meaning and all key facts. Improve clarity and flow. Then add a one-line note on what changed.`,
   organise:`MODE: ORGANISE.\nReturn:\n**Task list** — actionable items.\n**Notes** — cleaned & grouped.\n**Study cards** — 3-6 Q&A cards.`,
-  draft:`MODE: DRAFT.\nWrite a polished, ready-to-send draft of the requested kind and tone, with a natural greeting and sign-off.`
+  draft:`MODE: DRAFT.\nWrite a polished, ready-to-send draft of the requested kind and tone, with a natural greeting and sign-off.`,
+  chat:`MODE: CHAT.\nYou are a warm, helpful assistant. Answer the user's question completely and clearly, matching their language. No setup needed.`
 };
 function gate(){
   if(!S.user){toast("Please sign in first — it takes 10 seconds.");go("/auth");throw new Error("Sign in to use Illumini.")}
