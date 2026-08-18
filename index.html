@@ -376,12 +376,19 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
 .think summary::-webkit-details-marker{display:none}
 .think summary::before{content:"🪞 "}
 .think .think-b{margin-top:7px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:9px 12px;font-size:12.5px;color:var(--ink-2);line-height:1.6;white-space:pre-wrap}
-.chbar{margin-top:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:11px;box-shadow:var(--shadow-md)}
-.ch-row{display:flex;gap:9px;align-items:flex-end}
-.ch-row .attach{width:42px;height:42px;flex-shrink:0;border:1px solid var(--line);background:var(--surface-2);border-radius:var(--r-md);cursor:pointer;font-size:17px;transition:all .18s}
-.ch-row .attach:hover{border-color:var(--accent-line)}
-.ch-row textarea{flex:1;border:1px solid var(--line);border-radius:var(--r-md);background:var(--bg-2);padding:10px 13px;font-family:inherit;font-size:14px;color:var(--ink);resize:none;min-height:42px;max-height:150px;line-height:1.5}
-.ch-row textarea:focus{outline:none;border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.chbar{margin-top:6px}
+.ch-row{display:flex;gap:4px;align-items:center;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:5px 6px;box-shadow:var(--shadow-sm);transition:border-color .18s,box-shadow .18s}
+.ch-row:focus-within{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
+.ch-row .attach{width:32px;height:32px;flex-shrink:0;border:none;background:transparent;color:var(--ink-2);border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s}
+.ch-row .attach svg{width:17px;height:17px}
+.ch-row .attach:hover{color:var(--accent);background:var(--accent-soft)}
+.ch-row textarea{flex:1;border:none;background:transparent;color:var(--ink);padding:8px 4px;font-family:inherit;font-size:14px;resize:none;min-height:24px;max-height:120px;line-height:1.5}
+.ch-row textarea:focus{outline:none}
+.ch-row textarea::placeholder{color:var(--faint)}
+.ch-row .send-pill{width:32px;height:32px;flex-shrink:0;border:none;border-radius:999px;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s;box-shadow:0 2px 8px rgba(169,63,43,.3)}
+.ch-row .send-pill svg{width:16px;height:16px}
+.ch-row .send-pill:hover{background:var(--accent-deep)}
+.ch-row .send-pill:disabled{opacity:.55;cursor:default}
 .att-c{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .att-c .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:650}
 .att-c .chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1}
@@ -459,6 +466,7 @@ const LOGO = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
 </svg>`;
 const STARL=`<svg viewBox="0 0 40 40"><path d="M20 10l2.1 7.9 7.9 2.1-7.9 2.1L20 30l-2.1-7.9L10 20l7.9-2.1z" fill="#fff"/></svg>`;
 const PAPERCLIP=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.49"/></svg>`;
+const ARROWUP=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
 
 /* ============================================================
    2. STREAK — clean modern streak symbol (req 2)
@@ -863,7 +871,7 @@ function chatTool(cfg){
         <div class="ch-row">
           <button class="attach" id="tatt" title="Attach a file">${PAPERCLIP}</button>
           <textarea id="tin" rows="1" placeholder="${cfg.ph}"></textarea>
-          <button class="btn btn-primary" id="tsnd">Send</button>
+          <button class="send-pill" id="tsnd" title="Send">${ARROWUP}</button>
         </div>
         <div class="ch-new" id="tnew">＋ Start a new ${cfg.n} ➜</div>
         <div class="sug-wrap"><div class="sug-lb">Try these</div>
