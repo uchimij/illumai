@@ -377,7 +377,7 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
 .think summary::before{content:"🪞 "}
 .think .think-b{margin-top:7px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:var(--r-sm);padding:9px 12px;font-size:12.5px;color:var(--ink-2);line-height:1.6;white-space:pre-wrap}
 .chbar{margin-top:6px}
-.ch-row{display:flex;gap:4px;align-items:center;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:5px 6px;box-shadow:var(--shadow-sm);transition:border-color .18s,box-shadow .18s}
+.ch-row{display:flex;gap:4px;align-items:center;background:var(--bg-2);border:1px solid var(--line);border-radius:999px;padding:5px 6px;box-shadow:var(--shadow-sm);position:relative;transition:border-color .18s,box-shadow .18s}
 .ch-row:focus-within{border-color:var(--accent-line);box-shadow:0 0 0 3px var(--accent-soft)}
 .ch-row .attach{width:32px;height:32px;flex-shrink:0;border:none;background:transparent;color:var(--ink-2);border-radius:999px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .18s}
 .ch-row .attach svg{width:17px;height:17px}
@@ -389,6 +389,10 @@ html[data-theme="dark"] .pay-apple{background:#fff;color:#000}
 .ch-row .send-pill svg{width:16px;height:16px}
 .ch-row .send-pill:hover{background:var(--accent-deep)}
 .ch-row .send-pill:disabled{opacity:.55;cursor:default}
+.att-menu{position:absolute;bottom:calc(100% + 8px);left:0;display:none;flex-direction:column;gap:2px;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:6px;box-shadow:var(--shadow-md);z-index:40;min-width:172px}
+.att-menu.on{display:flex}
+.att-menu button{background:none;border:none;color:var(--ink);font-family:inherit;font-size:13px;text-align:left;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer}
+.att-menu button:hover{background:var(--accent-soft);color:var(--accent)}
 .att-c{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .att-c .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line);border-radius:999px;padding:3px 11px;font-size:12px;font-weight:650}
 .att-c .chip button{border:0;background:none;color:inherit;cursor:pointer;font-size:14px;line-height:1}
@@ -467,6 +471,7 @@ const LOGO = `<svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
 const STARL=`<svg viewBox="0 0 40 40"><path d="M20 10l2.1 7.9 7.9 2.1-7.9 2.1L20 30l-2.1-7.9L10 20l7.9-2.1z" fill="#fff"/></svg>`;
 const PAPERCLIP=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.49"/></svg>`;
 const ARROWUP=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>`;
+const PLUS=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`;
 
 /* ============================================================
    2. STREAK — clean modern streak symbol (req 2)
@@ -597,7 +602,14 @@ async function api(path,opts={}){
     throw new Error("Could not reach the IllumAI server. Please check your connection and try again.");
   }
   let j; try{j=await r.json()}catch{j={}}
-  if(!r.ok){ const err=new Error(j.error||("Request failed ("+r.status+")")); err.code=j.code||null; throw err; }
+  if(!r.ok){
+    const msg=j.error||("Request failed ("+r.status+")");
+    if(r.status===401&&/not signed in|not authenticated|not logged in|session expired|token.*invalid|invalid.*token/i.test(msg)){
+      clearAuth();
+      if(location.hash!=="#/auth"){ toast("Your session ended — please sign in again."); location.hash="#/auth"; }
+    }
+    const err=new Error(msg); err.code=j.code||null; throw err;
+  }
   return j;
 }
 const SYS=`You are Illumini, an advanced AI writing companion inside IllumAI. You help users understand, transform, and improve any piece of writing.
@@ -869,9 +881,14 @@ function chatTool(cfg){
       <div class="chbar">
         <div class="att-c" id="tattc"></div>
         <div class="ch-row">
-          <button class="attach" id="tatt" title="Attach a file">${PAPERCLIP}</button>
+          <button class="attach" id="tatt" title="Add files, photos or text">${PLUS}</button>
           <textarea id="tin" rows="1" placeholder="${cfg.ph}"></textarea>
           <button class="send-pill" id="tsnd" title="Send">${ARROWUP}</button>
+        </div>
+        <div class="att-menu" id="tmenu">
+          <button data-ac="*" title="Attach a document">📄 Add files</button>
+          <button data-ac="image/*" title="Attach photos">🖼️ Add photos</button>
+          <button data-txt="1" title="Type text">✍️ Write text</button>
         </div>
         <div class="ch-new" id="tnew">＋ Start a new ${cfg.n} ➜</div>
         <div class="sug-wrap"><div class="sug-lb">Try these</div>
@@ -903,8 +920,10 @@ function chatMount(cfg){
   const fmt=(ans,think)=>{const th=(think||"").trim()?`<details class="think"><summary>Illumini's thought process</summary><div class="think-b">${esc(think)}</div></details>`:"";return th+`<div class="b">${esc(ans||"")}</div>`};
   const autoResize=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,150)+"px"};
   function renderAtt(){attc.innerHTML=names.map((n,i)=>`<span class="chip">📎 ${esc(n)} <button data-i="${i}">✕</button></span>`).join("");attc.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{const i=+b.dataset.i;names.splice(i,1);texts.splice(i,1);renderAtt()})}
-  att.onclick=()=>fileIn.click();
-  fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{if(busy)return;f.text().then(t=>{names.push(f.name);texts.push(String(t||"").slice(0,8000));renderAtt()}).catch(()=>{names.push(f.name);texts.push("");renderAtt()})});fileIn.value=""};
+  att.onclick=(e)=>{e.stopPropagation();const m=document.getElementById("tmenu");m.classList.toggle("on")};
+  document.querySelectorAll("#tmenu button").forEach(b=>b.onclick=(e)=>{e.stopPropagation();const ac=b.dataset.ac;const m=document.getElementById("tmenu");if(ac){m.classList.remove("on");fileIn.setAttribute("accept",ac);fileIn.click()}else{m.classList.remove("on");ta.focus();toast("Type your text in the box below")}});
+  document.addEventListener("click",()=>{const m=document.getElementById("tmenu");if(m)m.classList.remove("on")});
+  fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{if(busy)return;const isImg=/^image\//.test((f.type||""));(isImg?Promise.resolve(""):f.text()).then(t=>{names.push(f.name);texts.push(isImg?"":String(t||"").slice(0,8000));renderAtt()}).catch(()=>{names.push(f.name);texts.push("");renderAtt()})});fileIn.value=""};
   document.querySelectorAll("#tsug .sug").forEach(s=>s.onclick=()=>{if(busy)return;ta.value=s.dataset.q;autoResize();run()});
   nw.onclick=()=>{thread.innerHTML=wrap;msgs=[];turns=[];names=[];texts=[];attc.innerHTML="";busy=false;ta.value="";autoResize();ta.focus();try{wr(stk,{msgs:[],turns:[]})}catch{}};
   ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();run()}});
@@ -1023,9 +1042,14 @@ P["/drafts"]=()=>{
     <div class="chbar">
       <div class="att-c" id="dattc"></div>
       <div class="ch-row">
-        <button class="attach" id="datt" title="Attach notes">${PAPERCLIP}</button>
+        <button class="attach" id="datt" title="Add files, photos or notes">${PLUS}</button>
         <textarea id="din" rows="1" placeholder="e.g. How do sleep, circadian rhythms and focus relate?"></textarea>
         <button class="send-pill" id="dsnd" title="Generate anchored draft">${ARROWUP}</button>
+      </div>
+      <div class="att-menu" id="dmenu">
+        <button data-ac="*" title="Attach a document">📄 Add files</button>
+        <button data-ac="image/*" title="Attach photos">🖼️ Add photos</button>
+        <button data-txt="1" title="Type notes">✍️ Write notes</button>
       </div>
       <div class="ch-new" id="dnew">＋ Start a new Cognitive Draft ➜</div>
       <div class="sug-wrap"><div class="sug-lb">Try these</div>
@@ -1054,8 +1078,10 @@ function draftMount(){
   const saveT=()=>{try{wr(stk,{turns,sources})}catch{}};
   turns.forEach(t=>push(t.role==="user"?"user":"ai", t.html));
   const autoResize=()=>{ta.style.height="auto";ta.style.height=Math.min(ta.scrollHeight,150)+"px"};
-  att.onclick=()=>fileIn.click();
-  fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{f.text().then(t=>{ta.value=(ta.value?ta.value+"\n":"")+String(t||"").slice(0,8000);autoResize()})});fileIn.value=""};
+  att.onclick=(e)=>{e.stopPropagation();const m=document.getElementById("dmenu");m.classList.toggle("on")};
+  document.querySelectorAll("#dmenu button").forEach(b=>b.onclick=(e)=>{e.stopPropagation();const ac=b.dataset.ac;const m=document.getElementById("dmenu");if(ac){m.classList.remove("on");fileIn.setAttribute("accept",ac);fileIn.click()}else{m.classList.remove("on");ta.focus();toast("Type your notes in the box below")}});
+  document.addEventListener("click",()=>{const m=document.getElementById("dmenu");if(m)m.classList.remove("on")});
+  fileIn.onchange=()=>{[...fileIn.files].forEach(f=>{if(busy)return;const isImg=/^image\//.test((f.type||""));(isImg?Promise.resolve(""):f.text()).then(t=>{ta.value=(ta.value?ta.value+"\n":"")+(isImg?"[Image: "+f.name+"]":String(t||"").slice(0,8000));autoResize()})});fileIn.value=""};
   document.querySelectorAll("#dsug .sug").forEach(s=>s.onclick=()=>{if(busy)return;ta.value=s.dataset.q;autoResize();run()});
   nw.onclick=()=>{thread.innerHTML=wrap;turns=[];sources=[];busy=false;ta.value="";autoResize();ta.focus();try{wr(stk,{turns:[],sources:[]})}catch{}};
   ta.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();run()}});
