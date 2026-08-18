@@ -106,8 +106,8 @@ async function callGlm(messages, temperature) {
   const r = await fetch(GLM_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${GLM_KEY}` },
-    body: JSON.stringify({ model: GLM_MODEL, messages, temperature, max_tokens: 1800 }),
-    signal: AbortSignal.timeout(15000),
+    body: JSON.stringify({ model: GLM_MODEL, messages, temperature, max_tokens: 1000 }),
+    signal: AbortSignal.timeout(25000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`GLM ${r.status}: ${t.slice(0, 300)}`); }
   const j = await r.json();
@@ -121,8 +121,8 @@ async function callCohere(messages, temperature) {
   const r = await fetch("https://api.cohere.com/v2/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${COHERE_KEY}` },
-    body: JSON.stringify({ model: COHERE_MODEL, messages: [{ role: "user", content }], temperature, max_tokens: 1800 }),
-    signal: AbortSignal.timeout(15000),
+    body: JSON.stringify({ model: COHERE_MODEL, messages: [{ role: "user", content }], temperature, max_tokens: 1000 }),
+    signal: AbortSignal.timeout(25000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`Cohere ${r.status}: ${t.slice(0, 300)}`); }
   const j = await r.json();
@@ -135,8 +135,8 @@ async function callOpenAI(messages, temperature) {
   const r = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${OPENAI_KEY}` },
-    body: JSON.stringify({ model: OPENAI_MODEL, messages, temperature, max_tokens: 1800 }),
-    signal: AbortSignal.timeout(15000),
+    body: JSON.stringify({ model: OPENAI_MODEL, messages, temperature, max_tokens: 1000 }),
+    signal: AbortSignal.timeout(25000),
   });
   if (!r.ok) { const t = await r.text().catch(() => ""); throw new Error(`OpenAI ${r.status}: ${t.slice(0, 300)}`); }
   const j = await r.json();
