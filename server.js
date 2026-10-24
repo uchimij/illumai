@@ -737,8 +737,11 @@ const server = http.createServer(async (req, res) => {
 
   /* ---------- Logs / SPA ---------- */
   if (P === "/api/logs" && req.method === "GET") {
+    if (!u) return json(res, 401, { ok: false, error: "Not signed in" });
     const limit = Number(url.searchParams.get("limit") || 50);
-    return json(res, 200, { ok: true, logs: history.slice(-Math.max(1, limit)).reverse(), count: history.length });
+    // Ordinary users only see their own entries; the owner (existing admin flag) sees all.
+    const mine = u.owner ? history : history.filter((r) => r && r.meta && r.meta.user === u.email);
+    return json(res, 200, { ok: true, logs: mine.slice(-Math.max(1, limit)).reverse(), count: mine.length });
   }
   if (P === "/" || P === "/index.html") {
     res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
