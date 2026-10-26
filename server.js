@@ -696,6 +696,7 @@ const server = http.createServer(async (req, res) => {
       f.append("line_items[0][price_data][currency]", CURRENCY);
       f.append("line_items[0][price_data][product_data][name]", label);
       f.append("line_items[0][price_data][unit_amount]", String(amountPence));
+      f.append("adaptive_pricing[enabled]", "false"); // keep the price in the store currency
       // Tag the payment so we can verify it later against this exact user + purchase.
       f.append("client_reference_id", String(u.id));
       f.append("metadata[userId]", String(u.id));
