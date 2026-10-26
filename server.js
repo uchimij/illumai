@@ -345,6 +345,7 @@ const PLAN_PRICES = {
 };
 const PLAN_CAP = { pro: 200, proplus: 650, proultra: 2500, proultraplus: Infinity };
 const STRIPE_KEY = process.env.STRIPE_SECRET_KEY || "";
+const STRIPE_API = process.env.STRIPE_API_BASE || "https://api.stripe.com";
 const CURRENCY = (process.env.ILLUMAI_CURRENCY || "gbp").toLowerCase();
 
 function newAccount(username, email, password) {
@@ -695,8 +696,13 @@ const server = http.createServer(async (req, res) => {
       f.append("line_items[0][price_data][currency]", CURRENCY);
       f.append("line_items[0][price_data][product_data][name]", label);
       f.append("line_items[0][price_data][unit_amount]", String(amountPence));
+      // Tag the payment so we can verify it later against this exact user + purchase.
+      f.append("client_reference_id", String(u.id));
+      f.append("metadata[userId]", String(u.id));
+      if (isPack) f.append("metadata[pack]", String(Number(pack)));
+      else { f.append("metadata[plan]", String(plan)); f.append("metadata[cycle]", cycle === "y" ? "y" : "m"); }
       if (!isPack) f.append("line_items[0][price_data][recurring][interval]", cycle === "y" ? "year" : "month");
-      const r = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      const r = await fetch(`${STRIPE_API}/v1/checkout/sessions`, {
         method: "POST",
         headers: { Authorization: `Bearer ${STRIPE_KEY}`, "Content-Type": "application/x-www-form-urlencoded" },
         body: f.toString(),
@@ -711,26 +717,56 @@ const server = http.createServer(async (req, res) => {
   if (P === "/api/checkout/confirm" && req.method === "POST") {
     if (!u) return json(res, 401, { ok: false, error: "Not signed in" });
     try {
-      const { plan, pack, cycle = "m", demo = true } = JSON.parse(await readBody(req));
-      if (pack) {
-        if (u.plan !== "free") throw new Error("Credit packs are for Free plans only.");
-        u.credits = (u.credits || 0) + Number(pack) * 10;
-      } else if (plan === "free") {
-        // Downgrade to Free — keep vault/history, reset credits to the trial balance.
+      const { plan, pack, cycle = "m", sessionId } = JSON.parse(await readBody(req));
+
+      // Free downgrade never involves payment — always allowed.
+      if (!pack && plan === "free") {
         u.plan = "free"; u.subscription = null;
         u.usage = { cycleStart: null, cycleEnd: null, used: 0 };
         u.credits = Math.max(u.credits || 0, 5);
-      } else {
-        if (!PLAN_PRICES[plan]) throw new Error("Unknown plan: " + plan);
-        if (u.subscription && u.subscription.plan === plan && Date.now() < (u.subscription.renew || 0))
-          throw new Error("You already own this plan and it's still active.");
-        const ms = cycle === "y" ? 365 * 864e5 : 30 * 864e5;
-        u.plan = plan;
-        u.subscription = { plan, cycle, status: "active", started: Date.now(), renew: Date.now() + ms };
-        u.usage = { cycleStart: Date.now(), cycleEnd: Date.now() + ms, used: 0 };
-        u.purchases = (u.purchases || []).concat({ plan, cycle, at: Date.now(), amount: cycle === "y" ? PLAN_PRICES[plan].y : PLAN_PRICES[plan].m, currency: CURRENCY, method: demo ? "demo" : "stripe" });
+        saveStore(USERS_FILE, users);
+        return json(res, 200, { ok: true, user: publicUser(u) });
       }
+
+      // Every paid grant must be verified directly with the payment provider.
+      if (!STRIPE_KEY) throw new Error("Payments aren't enabled yet. Upgrades are unavailable right now.");
+      if (!sessionId) throw new Error("Missing payment session. Please complete checkout first.");
+
+      const sr = await fetch(`${STRIPE_API}/v1/checkout/sessions/${encodeURIComponent(String(sessionId))}`, {
+        headers: { Authorization: `Bearer ${STRIPE_KEY}` },
+      });
+      const sess = await sr.json().catch(() => ({}));
+      if (!sr.ok) throw new Error("Could not verify this payment with Stripe.");
+      if (sess.status !== "complete") throw new Error("Payment was not completed.");
+      if (!(sess.payment_status === "paid" || sess.payment_status === "no_payment_required"))
+        throw new Error("Payment has not been paid.");
+      if (String((sess.metadata || {}).userId || "") !== String(u.id))
+        throw new Error("This payment belongs to a different account.");
+      u.redeemed = Array.isArray(u.redeemed) ? u.redeemed : [];
+      if (u.redeemed.includes(sess.id)) throw new Error("This payment has already been applied to your account.");
+
+      // Trust Stripe's metadata, never the request body.
+      const mPack = sess.metadata && sess.metadata.pack ? Number(sess.metadata.pack) : 0;
+      const mPlan = (sess.metadata && sess.metadata.plan) || "";
+      const mCycle = sess.metadata && sess.metadata.cycle === "y" ? "y" : "m";
+
+      if (mPack > 0) {
+        if (u.plan !== "free") throw new Error("Credit packs are for Free plans only.");
+        u.credits = (u.credits || 0) + mPack * 10;
+      } else {
+        if (!PLAN_PRICES[mPlan]) throw new Error("Unknown plan on this payment.");
+        if (u.subscription && u.subscription.plan === mPlan && Date.now() < (u.subscription.renew || 0))
+          throw new Error("You already own this plan and it's still active.");
+        const ms = mCycle === "y" ? 365 * 864e5 : 30 * 864e5;
+        u.plan = mPlan;
+        u.subscription = { plan: mPlan, cycle: mCycle, status: "active", started: Date.now(), renew: Date.now() + ms };
+        u.usage = { cycleStart: Date.now(), cycleEnd: Date.now() + ms, used: 0 };
+        u.purchases = (u.purchases || []).concat({ plan: mPlan, cycle: mCycle, at: Date.now(), amount: mCycle === "y" ? PLAN_PRICES[mPlan].y : PLAN_PRICES[mPlan].m, currency: CURRENCY, method: "stripe", session: sess.id });
+      }
+      u.redeemed.push(sess.id);
+      if (u.redeemed.length > 50) u.redeemed = u.redeemed.slice(-50);
       saveStore(USERS_FILE, users);
+      logRow({ action: "payment_verified", input: sess.id, output: mPlan || ("pack:" + mPack), meta: { user: u.email } });
       return json(res, 200, { ok: true, user: publicUser(u) });
     } catch (e) { return json(res, 400, { ok: false, error: e.message }); }
   }

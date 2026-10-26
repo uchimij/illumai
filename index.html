@@ -1304,7 +1304,7 @@ P["/checkout"]=(q)=>{
       const method=b.dataset.pay;b.disabled=true;const t0=b.innerHTML;b.textContent="Opening secure checkout…";
       try{
         const j=await api("/api/checkout",{method:"POST",body:JSON.stringify({plan:planKey,pack:pack?+pack:null,cycle:cyc,method})});
-        if(j.demo){ finalize(pack,planKey,cyc,true); return; }
+        if(j.demo){ msg.style.display="block"; msg.textContent="Payments aren't enabled yet — upgrades are unavailable right now."; return; }
         if(j.url){ location.href=j.url; return; }
         msg.style.display="block"; msg.textContent=j.error||"Checkout unavailable.";
       }catch(e){ msg.style.display="block"; msg.textContent="⚠ "+e.message; }
@@ -1313,10 +1313,10 @@ P["/checkout"]=(q)=>{
     // If returning from Stripe success, finalise the plan.
     if((new URLSearchParams(location.hash.split("?")[1]||"")).get("paid")==="1"){
       const s=q.get("session");
-      finalize(pack,planKey,cyc,true);
+      finalize(pack,planKey,cyc,s);
     }
-    function finalize(pk,pl,cc,demo){
-      api("/api/checkout/confirm",{method:"POST",body:JSON.stringify({plan:pl,pack:pk?+pk:null,cycle:cc,demo})})
+    function finalize(pk,pl,cc,sessionId){
+      api("/api/checkout/confirm",{method:"POST",body:JSON.stringify({plan:pl,pack:pk?+pk:null,cycle:cc,sessionId:sessionId||null})})
         .then(j=>{ if(j.user)setUser(j.user); toast(pk?`${+pk*10} credits added ✓`:(PLANS[pl]?.name+" activated ✓")); go(pl==="proultraplus"?"/chat":"/profile"); })
         .catch(e=>{msg&&(msg.style.display="block",msg.textContent="⚠ "+e.message);toast(e.message)});
     }
