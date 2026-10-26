@@ -1422,18 +1422,6 @@ P["/settings"]=()=>({title:"Settings",html:`
     document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{S.theme=b.dataset.t;applyTheme();render();toast(S.theme==="dark"?"Dark mode on":"Light mode on");syncLocal()});
     document.getElementById("exp").onclick=()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(S.user?.vault||[],null,2)],{type:"application/json"}));a.download="illumai-vault.json";a.click();toast("Vault exported")};
     document.getElementById("sync").onclick=async()=>{try{const j=await api("/api/sync",{method:"POST",body:JSON.stringify({vault:S.user?.vault||[],history:S.user?.history||[],theme:S.theme})});if(j.user)setUser(j.user);toast("Progress synced to your account ✓")}catch(e){toast(e.message)}};
-    // Returning from Stripe? Verify the payment and apply the plan.
-    (function(){
-      const hq=new URLSearchParams(location.hash.split("?")[1]||"");
-      if(hq.get("paid")==="1"&&hq.get("session")){
-        const sid=hq.get("session");
-        try{history.replaceState(null,"","#/profile")}catch(e){}
-        toast("Confirming your payment…");
-        api("/api/checkout/confirm",{method:"POST",body:JSON.stringify({sessionId:sid})})
-          .then(j=>{if(j.user)setUser(j.user);toast("Payment confirmed — your plan is active ✓");render()})
-          .catch(e=>toast(e.message));
-      }
-    })();
   }});
 
 /* ---------- Auth (req side-note) ---------- */
@@ -1499,10 +1487,37 @@ function orbInit(orb,state){ if(!orb)return; orb.onclick=()=>{state.textContent=
 function syncLocal(){ if(!S.user)return; api("/api/sync",{method:"POST",body:JSON.stringify({vault:S.user.vault||[],history:S.user.history||[],theme:S.theme})}).then(j=>{if(j.user)setUser(j.user)}).catch(()=>{}); }
 function parse(){ const raw=(location.hash||"#/").replace(/^#/,""); const i=raw.indexOf("?"); return{path:(i>=0?raw.slice(0,i):raw)||"/",q:new URLSearchParams(i>=0?raw.slice(i+1):"")}; }
 function go(p){ if(("#"+p)===location.hash){render();return} location.hash=p; }
+/* --- Finish a Stripe purchase ---------------------------------------
+   The session id must be captured BEFORE the auth gate rewrites the URL,
+   otherwise the pending payment is lost when a signed-out page loads. */
+let PENDING_SID=null;
+function capturePendingPurchase(){
+  try{
+    const hq=new URLSearchParams(location.hash.split("?")[1]||"");
+    const sid=hq.get("session");
+    if(hq.get("paid")==="1"&&sid){
+      PENDING_SID=sid;
+      try{sessionStorage.setItem("il_pending_session",sid)}catch(e){}
+      try{history.replaceState(null,"","#/profile")}catch(e){location.hash="#/profile"}
+    }
+  }catch(e){}
+}
+function processPendingPurchase(){
+  let sid=PENDING_SID;
+  try{ sid = sid || sessionStorage.getItem("il_pending_session"); }catch(e){}
+  if(!sid || !S.user) return;          // keep it pending until we know who they are
+  PENDING_SID=null;
+  try{sessionStorage.removeItem("il_pending_session")}catch(e){}
+  toast("Confirming your payment…");
+  api("/api/checkout/confirm",{method:"POST",body:JSON.stringify({sessionId:sid})})
+    .then(j=>{ if(j.user)setUser(j.user); toast("Payment confirmed — your plan is active ✓"); render(); })
+    .catch(e=>{ toast(e.message); });
+}
 function render(){
   const{path,q}=parse();
   // Force login before using the app (auth gate).
   if(!S.user&&path!=="/auth"){ go("/auth"); return; }
+  setTimeout(processPendingPurchase,0);
   const page=P[path]||P["/"];
   const v=page(q);
   document.getElementById("crumb").textContent=v.title;
@@ -1546,6 +1561,7 @@ async function boot(){
 document.getElementById("theme").onclick=()=>{S.theme=S.theme==="dark"?"light":"dark";applyTheme();render();syncLocal()};
 document.getElementById("menu").onclick=()=>{document.getElementById("sidebar").classList.toggle("open");document.getElementById("scrim").classList.toggle("on")};
 document.getElementById("scrim").onclick=()=>{document.getElementById("sidebar").classList.remove("open");document.getElementById("scrim").classList.remove("on")};
+capturePendingPurchase();
 render();
 boot();
 </script>
